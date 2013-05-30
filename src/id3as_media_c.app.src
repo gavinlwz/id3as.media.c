@@ -1,0 +1,9 @@
+{application, id3as_media_c,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                 ]},
+  {env, []}
+ ]}.

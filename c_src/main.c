@@ -1,4 +1,5 @@
 #include "id3as_libav.h"
+#include <libavfilter/avfilter.h>
 
 static ID3ASFilterContext *initialise(char *buffer);
 static ID3ASFilterContext *read_filter(char *buf, int *index);
@@ -14,6 +15,8 @@ int main(int argc, char **argv)
 
   //av_log_set_level(AV_LOG_DEBUG);
   avcodec_register_all();
+  avfilter_register_all();
+
   id3as_filters_register_all();
 
   if (!read_port(PACKET_SIZE, &data, &data_buffer_size))

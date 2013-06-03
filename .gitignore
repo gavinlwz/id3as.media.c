@@ -1,0 +1,15 @@
+.DS_Store
+*.beam
+ebin
+deps
+erl_crash.dump
+out
+log/
+c_src/*.o
+priv/id3as_codecs
+priv/mibs
+include/ID3AS-MEDIA.hrl
+.test
+dialyzer.plt
+.edts
+include/ID3AS.hrl

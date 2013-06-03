@@ -32,6 +32,7 @@ void id3as_filters_register_all()
   REGISTER_FILTER(output_raw_video);
   REGISTER_FILTER(output_encoded_video);
   REGISTER_FILTER(stereo_splitter);
+  REGISTER_FILTER(effects_processor);
 }
 
 ID3ASFilter *find_filter(char *name) 

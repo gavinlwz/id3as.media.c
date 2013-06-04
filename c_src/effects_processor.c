@@ -82,7 +82,7 @@ static void do_init(codec_t *this, AVFrame *frame)
 	   frame->width, frame->height, frame->format,
 	   this->time_base.num, this->time_base.den,
 	   frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den);
-  TRACEFMT("ARG ARE %s, GRAPH IS %s", args, this->filter_graph_desc),
+
   ret = avfilter_graph_create_filter(&this->buffersrc_ctx, avfilter_get_by_name("buffer"), "in", args, NULL, this->filter_graph);
 
   if (ret < 0) {

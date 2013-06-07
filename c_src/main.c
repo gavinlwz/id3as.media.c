@@ -10,6 +10,9 @@ int main(int argc, char **argv)
   unsigned char *metadata = NULL;
   unsigned int metadata_buffer_size = 0;
 
+  unsigned char *opaque = NULL;
+  unsigned int opaque_buffer_size = 0;
+
   unsigned char *data = NULL;
   unsigned int data_buffer_size = 0;
 
@@ -31,15 +34,17 @@ int main(int argc, char **argv)
     {
 
       int metadata_size = read_port(PACKET_SIZE, &metadata, &metadata_buffer_size);
+      int opaque_size = read_port(PACKET_SIZE, &opaque, &opaque_buffer_size);
       int data_size = read_port(PACKET_SIZE, &data, &data_buffer_size);
 
-      if (metadata_size < 0 || data_size < 0)
+      if (metadata_size < 0 || data_size < 0 || opaque_size < 0)
 	{
 	  break;
 	}
 
       input->filter->execute(input, 
 			     metadata, metadata_size,
+			     opaque, opaque_size,
 			     data, data_size);
     }
   while (1);

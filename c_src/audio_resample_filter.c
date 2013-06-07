@@ -44,6 +44,7 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
 			     0);
 
   this->frame->pts = frame->pts;
+  this->frame->opaque = frame->opaque;
 
   send_to_graph(context, this->frame);
 }

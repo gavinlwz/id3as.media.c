@@ -23,6 +23,7 @@
 
 typedef struct _ID3ASFilterContext ID3ASFilterContext;
 typedef struct _ID3ASFilter ID3ASFilter;
+typedef struct _sized_buffer sized_buffer;
 
 struct _ID3ASFilterContext
 {
@@ -43,6 +44,12 @@ struct _ID3ASFilter
   ID3ASFilter *next;
 };
 
+struct _sized_buffer
+{
+  void *data;
+  int size;
+};
+
 //******************************************************************************
 // Utility functions
 //******************************************************************************
@@ -59,7 +66,7 @@ void set_packet_metadata(AVPacket *pkt, unsigned char *metadata);
 void set_frame_metadata(AVFrame *frame, unsigned char *metadata);
 
 void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame);
-void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt);
+void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, sized_buffer *opaque);
 
 AVCodec *get_encoder(char *codec_name);
 AVCodec *get_decoder(char *codec_name);

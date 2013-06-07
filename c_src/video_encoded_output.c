@@ -57,7 +57,7 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
 	  pkt.dts = av_rescale_q(pkt.dts, this->context->time_base, NINETY_KHZ);
 	  pkt.duration = av_rescale_q(pkt.duration, this->context->time_base, NINETY_KHZ);
 
-	  write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt);
+	  write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt, frame->opaque);
 	}
 
       frame->pts = old_pts;

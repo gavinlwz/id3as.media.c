@@ -30,6 +30,7 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
 	      this->output_frame->data, this->output_frame->linesize);  
     
     this->output_frame->pts = frame->pts;
+    this->output_frame->opaque = frame->opaque;
     
     send_to_graph(context, this->output_frame);
   }

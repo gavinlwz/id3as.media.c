@@ -17,6 +17,7 @@ typedef struct _codec_t
 
 static void process(ID3ASFilterContext *context,
 		    unsigned char *metadata, unsigned int metadata_size, 
+		    unsigned char *opaque, unsigned int opaque_size, 
 		    unsigned char *data, unsigned int data_size)
 {
   codec_t *this = context->priv_data;
@@ -40,7 +41,10 @@ static void process(ID3ASFilterContext *context,
     }
   else if (got_frame && len > 0)
     {
+      sized_buffer o = {.data = opaque, .size = opaque_size};
+
       this->frame->pts = pkt.dts;
+      this->frame->opaque = &o;
 
       send_to_graph(context, this->frame);
     }

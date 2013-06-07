@@ -51,8 +51,6 @@ static void resize_buffer(codec_t *this, int nb_samples)
       av_samples_copy(this->operating_buffer, tmp, 0, 0, this->current_sample_offset,
 		      this->context->channels, this->sample_format);
 
-      // Memory leak here - how to free the samples in tmp?
-
       this->operating_buffer_size_in_samples = this->operating_buffer_size_in_samples + nb_samples;
     }
 }
@@ -65,13 +63,7 @@ static void copy_frame_to_operating_buffer(codec_t *this, AVFrame *frame)
 		  frame->nb_samples, this->context->channels, this->sample_format);
 
   this->operating_timestamp = frame->pts - (90000 * this->current_sample_offset / this->sample_rate);
-  /*
-  if (this->current_sample_offset == 0)
-    {
-      TRACE("SYNC POINT");
-      this->operating_timestamp = frame->pts;
-    }
-  */
+
   this->current_sample_offset += frame->nb_samples;
 }
 
@@ -115,8 +107,7 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
 	if (got_packet_ptr && should_send(this, frame))
 	  {
 	    pkt.duration = av_rescale_q(pkt.duration, this->context->time_base, (AVRational) {1, 90000});
-
-	    write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt);
+	    write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt, frame->opaque);
 	  }
       }
 

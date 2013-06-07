@@ -36,6 +36,9 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
 
   this->convert_fun(frame, this->left_frame, this->right_frame);
 
+  this->left_frame->opaque = frame->opaque;
+  this->right_frame->opaque = frame->opaque;
+
   switch (this->split_mode_enum) 
     {
     case LEFT_ONLY:

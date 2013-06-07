@@ -14,6 +14,7 @@ typedef struct _codec_t
 
 static void process(ID3ASFilterContext *context,
 		    unsigned char *metadata, unsigned int metadata_size, 
+		    unsigned char *opaque, unsigned int opaque_size, 
 		    unsigned char *data, unsigned int data_size)
 {
   codec_t *this = context->priv_data;

@@ -329,9 +329,11 @@ static int encode_header(char *output_buffer, metadata_t *metadata)
   ei_encode_tuple_header(output_buffer, &i, 3);
   ei_encode_atom(output_buffer, &i, "output_frame");
   ei_encode_atom(output_buffer, &i, metadata->pin_name);
-  ei_encode_tuple_header(output_buffer, &i, 10);
+  ei_encode_tuple_header(output_buffer, &i, 12);
   ei_encode_atom(output_buffer, &i, "frame");
   ei_encode_atom(output_buffer, &i, "undefined"); // source_id
+  ei_encode_atom(output_buffer, &i, "undefined"); // source_timestamp
+  ei_encode_atom(output_buffer, &i, "undefined"); // received_at
   ei_encode_long(output_buffer, &i, metadata->stream_id); // stream_id
   encode_timestamp(output_buffer, &i, metadata->pts); // pts
   encode_timestamp(output_buffer, &i, metadata->dts); // dts

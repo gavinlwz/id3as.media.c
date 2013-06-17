@@ -28,21 +28,17 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
 
   do
     {
-      int64_t old_pts;
-      enum AVPictureType old_pict_type;
+      AVFrame local_frame = *frame;
 
       av_init_packet(&pkt);
       pkt.size = this->pkt_size;
       pkt.data = this->pkt_buffer;
 
       // Rescale PTS from "erlang time" (90kHz) to the codec timebase
-      old_pts = frame->pts;
-      old_pict_type = frame->pict_type;
+      local_frame.pts = av_rescale_q(local_frame.pts, NINETY_KHZ, this->context->time_base);
+      local_frame.pict_type = 0;
 
-      frame->pts = av_rescale_q(frame->pts, NINETY_KHZ, this->context->time_base);
-      frame->pict_type = 0;
-
-      ret = avcodec_encode_video2(this->context, &pkt, frame, &got_packet_ptr);
+      ret = avcodec_encode_video2(this->context, &pkt, &local_frame, &got_packet_ptr);
       
       if (ret != 0)
 	{
@@ -57,11 +53,8 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
 	  pkt.dts = av_rescale_q(pkt.dts, this->context->time_base, NINETY_KHZ);
 	  pkt.duration = av_rescale_q(pkt.duration, this->context->time_base, NINETY_KHZ);
 
-	  write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt, frame->opaque);
+	  write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt, local_frame.opaque);
 	}
-
-      frame->pts = old_pts;
-      frame->pict_type = old_pict_type;
 
     } while (0); // currently we just "loop" once - when we need to flush (not yet implemented), we need to loop
                  // on got_packet_ptr

@@ -6,6 +6,7 @@
 
 #include "id3as_libav.h"
 #include "i_port.h" 
+#include "i_utils.h" 
 
 typedef struct _metadata_t {
 
@@ -46,6 +47,8 @@ static int encode_header(char *output_buffer, metadata_t *metadata);
 static void encode_audio_header(char *output_buffer, int *i, metadata_t *metadata);
 static void encode_video_header(char *output_buffer, int *i, metadata_t *metadata);
 static void encode_timestamp(char *output_buffer, int *i, int64_t timestamp);
+
+static i_mutex_t mutex = INITIALISE_STATIC_MUTEX();
 
 void send_to_graph(ID3ASFilterContext *this, AVFrame *frame)
 {
@@ -225,6 +228,8 @@ void set_frame_metadata(AVFrame *frame, unsigned char *metadata)
 
 void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame)
 {
+  i_mutex_lock(&mutex);
+
   metadata_t metadata = {
     .type = frame->pict_type == 0 ? AVMEDIA_TYPE_AUDIO : AVMEDIA_TYPE_VIDEO,
     .pin_name = pin_name,
@@ -259,10 +264,13 @@ void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame)
 
   write_header(&metadata);
   write_data((char *)frame->data[0], frame->linesize[0]);
+  i_mutex_unlock(&mutex);
 }
 
 void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, sized_buffer *opaque)
 {
+  i_mutex_lock(&mutex);
+
   metadata_t metadata = {
     .type = codec_context->codec_type,
     .pin_name = pin_name,
@@ -299,6 +307,8 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
   write_header(&metadata);
   write_data((char *)opaque->data, opaque->size);
   write_data((char *)pkt->data, pkt->size);
+
+  i_mutex_unlock(&mutex);
 }
 
 static void write_data(char *data, int size) 

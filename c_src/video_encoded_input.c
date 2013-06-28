@@ -30,8 +30,6 @@ static void process(ID3ASFilterContext *context,
 
   set_packet_metadata(&pkt, metadata);
 
-  // Rescales pts / dts to this->time_base.  Or just count...
-
   int len = avcodec_decode_video2(this->context, this->frame, &got_frame, &pkt);
   
   if (len < 0)
@@ -42,7 +40,6 @@ static void process(ID3ASFilterContext *context,
   else if (got_frame && len > 0)
     {
       sized_buffer o = {.data = opaque, .size = opaque_size};
-
       this->frame->pts = pkt.dts;
       this->frame->opaque = &o;
 

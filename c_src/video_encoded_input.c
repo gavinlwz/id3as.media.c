@@ -43,7 +43,7 @@ static void process(ID3ASFilterContext *context,
       this->frame->pts = pkt.dts;
       this->frame->opaque = &o;
 
-      send_to_graph(context, this->frame);
+      send_to_graph(context, this->frame, NINETY_KHZ);
     }
 }
 

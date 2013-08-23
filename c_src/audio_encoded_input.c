@@ -47,7 +47,7 @@ static void process(ID3ASFilterContext *context,
 	  this->frame->pts = this->frame->pkt_pts;
 	  this->frame->opaque = &o;
 
-	  send_to_graph(context, this->frame);
+	  send_to_graph(context, this->frame, NINETY_KHZ);
 
 	  pkt.size -= len;
 	  pkt.data += len;

@@ -17,7 +17,7 @@ typedef struct _codec_t
 
 static void do_init(codec_t *this, AVFrame *frame);
 
-static void process(ID3ASFilterContext *context, AVFrame *frame)
+static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational timebase)
 {
   codec_t *this = context->priv_data;
 
@@ -32,10 +32,10 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
     this->output_frame->pts = frame->pts;
     this->output_frame->opaque = frame->opaque;
     
-    send_to_graph(context, this->output_frame);
+    send_to_graph(context, this->output_frame, timebase);
   }
   else {
-    send_to_graph(context, frame);
+    send_to_graph(context, frame, timebase);
   }
 }
 

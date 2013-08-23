@@ -23,7 +23,7 @@ static void process(ID3ASFilterContext *context,
 
   set_frame_metadata(this->frame, metadata);
 
-  send_to_graph(context, this->frame);
+  send_to_graph(context, this->frame, NINETY_KHZ);
 }
 
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options) 

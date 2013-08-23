@@ -50,11 +50,11 @@ static void encode_timestamp(char *output_buffer, int *i, int64_t timestamp);
 
 static i_mutex_t mutex = INITIALISE_STATIC_MUTEX();
 
-void send_to_graph(ID3ASFilterContext *this, AVFrame *frame)
+void send_to_graph(ID3ASFilterContext *this, AVFrame *frame, AVRational timebase)
 {
   for (int i = 0; i < this->num_downstream_filters; i++)
     {
-      this->downstream_filters[i]->filter->execute(this->downstream_filters[i], frame);
+      this->downstream_filters[i]->filter->execute(this->downstream_filters[i], frame, timebase);
     }
 }
 

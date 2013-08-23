@@ -60,7 +60,8 @@ ID3ASFilterContext *allocate_instance(ID3ASFilter *filter,
 				      AVDictionary *codec_options, 
 				      ID3ASFilterContext **downstream_filters, 
 				      int num_downstream_filters);
-void send_to_graph(ID3ASFilterContext *processor, AVFrame *frame);
+
+void send_to_graph(ID3ASFilterContext *processor, AVFrame *frame, AVRational timebase);
 
 void set_packet_metadata(AVPacket *pkt, unsigned char *metadata);
 void set_frame_metadata(AVFrame *frame, unsigned char *metadata);

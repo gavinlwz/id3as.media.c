@@ -1,10 +1,13 @@
 #include "id3as_libav.h"
+#include "i_utils.h" 
 #include <inttypes.h>
 
 typedef struct _codec_t
 {
   AVClass *av_class;
+  int initialised;
 
+  AVDictionary *codec_options;
   AVCodec *codec;
   AVCodecContext *context;
   void *pkt_buffer;
@@ -19,12 +22,18 @@ typedef struct _codec_t
 
 } codec_t;
 
-static void process(ID3ASFilterContext *context, AVFrame *frame)
+static i_mutex_t mutex = INITIALISE_STATIC_MUTEX();
+
+static void do_init(codec_t *this, AVFrame *frame);
+
+static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational timebase)
 {
   AVPacket pkt;
   int got_packet_ptr = 0;
   int ret = 0;
   codec_t *this = context->priv_data;
+
+  do_init(this, frame);
 
   do
     {
@@ -34,8 +43,8 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
       pkt.size = this->pkt_size;
       pkt.data = this->pkt_buffer;
 
-      // Rescale PTS from "erlang time" (90kHz) to the codec timebase
-      local_frame.pts = av_rescale_q(local_frame.pts, NINETY_KHZ, this->context->time_base);
+      // Rescale PTS from the frame timebase to the codec timebase
+      local_frame.pts = av_rescale_q(local_frame.pts, timebase, this->context->time_base);
       local_frame.pict_type = 0;
 
       ret = avcodec_encode_video2(this->context, &pkt, &local_frame, &got_packet_ptr);
@@ -48,7 +57,7 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
       
       if (got_packet_ptr)
 	{
-	  // And rescale back again
+	  // And rescale back to "erlang time"
 	  pkt.pts = av_rescale_q(pkt.pts, this->context->time_base, NINETY_KHZ);
 	  pkt.dts = av_rescale_q(pkt.dts, this->context->time_base, NINETY_KHZ);
 	  pkt.duration = av_rescale_q(pkt.duration, this->context->time_base, NINETY_KHZ);
@@ -60,12 +69,39 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
                  // on got_packet_ptr
 }
 
+static void do_init(codec_t *this, AVFrame *frame) 
+{
+  if (this->initialised) {
+    return;
+  }
+
+  AVDictionaryEntry *flagsEntry = av_dict_get(this->codec_options, "flags", NULL, 0);
+  char flags[255];
+  strcpy(flags, flagsEntry ? flagsEntry-> value : "");
+
+  if (frame->interlaced_frame) {
+    strcat(flags, "+ildct");
+  }
+  else {
+    strcat(flags, "-ildct");
+  }
+  av_dict_set(&this->codec_options, "flags", flags, 0);
+
+  i_mutex_lock(&mutex);
+
+  this->context = allocate_video_context(this->codec, this->width, this->height, this->input_pixfmt, this->codec_options);
+  this->initialised = 1;
+
+  i_mutex_unlock(&mutex);
+}
+
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options) 
 {
   codec_t *this = context->priv_data;
+  this->initialised = 0;
 
   this->codec = get_encoder(this->codec_name);
-  this->context = allocate_video_context(this->codec, this->width, this->height, this->input_pixfmt, codec_options);
+  this->codec_options = codec_options;
 
   this->pkt_size = this->width * this->height * 10;  // Should be sufficient space! TODO - bit ugly though :(
   this->pkt_buffer = malloc(this->pkt_size);

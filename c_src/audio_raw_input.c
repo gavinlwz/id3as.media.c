@@ -30,7 +30,7 @@ static void process(ID3ASFilterContext *context,
       exit(-1); 
     } 
 
-  send_to_graph(context, this->frame);
+  send_to_graph(context, this->frame, NINETY_KHZ);
 }
 
 

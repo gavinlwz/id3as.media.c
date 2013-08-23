@@ -8,42 +8,44 @@ typedef struct _codec_t {
   AVClass *av_class;
   int initialised;
   
-  AVRational time_base;
   char *filter_graph_desc;
   
   AVFilterContext *buffersink_ctx;
   AVFilterContext *buffersrc_ctx;
   AVFilterGraph *filter_graph;
   AVFrame *output_frame;
-  
+  AVRational output_timebase;
+
 } codec_t;
 
-static void do_init(codec_t *this, AVFrame *frame);
+static void do_init(codec_t *this, AVFrame *frame, AVRational timebase);
 
-static void process(ID3ASFilterContext *context, AVFrame *frame)
+static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational timebase)
 {
   codec_t *this = context->priv_data;
   int ret;
 
-  do_init(this, frame);
+  do_init(this, frame, timebase);
 
-  if (av_buffersrc_add_frame(this->buffersrc_ctx, frame) < 0) {
+  if (av_buffersrc_write_frame(this->buffersrc_ctx, frame) < 0) {
     ERROR("Error while feeding the filtergraph\n");
     exit(-1);
   }
-
   while (1) {
     ret = av_buffersink_get_frame(this->buffersink_ctx, this->output_frame);
 
     if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
       break;
-
     if (ret < 0) {
       ERROR("Error from get_frame");
       exit(-1);
     }
 
-    send_to_graph(context, this->output_frame);
+    //fprintf(stderr, "Input PTS %ld, output PTS %ld\n", frame->pts, this->output_frame->pts);
+    //fprintf(stderr, "Input timebase %d/%d, output timebase %d/%d\n", timebase.num, timebase.den, this->output_timebase.num, this->output_timebase.den);
+    send_to_graph(context, this->output_frame, this->output_timebase);
+
+    av_frame_unref(this->output_frame);
   }
 }
 
@@ -53,7 +55,6 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
   int ret;
 
   this->initialised = 0;
-  this->time_base = NINETY_KHZ;
   this->filter_graph = avfilter_graph_alloc();
   this->output_frame = av_frame_alloc();
 
@@ -65,7 +66,7 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
   }
 }
 
-static void do_init(codec_t *this, AVFrame *frame) 
+static void do_init(codec_t *this, AVFrame *frame, AVRational timebase) 
 {
   if (this->initialised) {
     return;
@@ -80,7 +81,7 @@ static void do_init(codec_t *this, AVFrame *frame)
 	   "%d:%d:%d:%d:%d:%d:%d",
 	   //"video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
 	   frame->width, frame->height, frame->format,
-	   this->time_base.num, this->time_base.den,
+	   timebase.num, timebase.den,
 	   frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den);
 
   ret = avfilter_graph_create_filter(&this->buffersrc_ctx, avfilter_get_by_name("buffer"), "in", args, NULL, this->filter_graph);
@@ -111,6 +112,10 @@ static void do_init(codec_t *this, AVFrame *frame)
     ERROR("avfilter_graph_config failed");
     exit(-1);
   }
+
+  AVFilterContext *sink = avfilter_graph_get_filter(this->filter_graph, "out");
+
+  this->output_timebase = sink->inputs[0]->time_base;
 
   this->initialised = 1;
 }

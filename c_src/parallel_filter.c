@@ -25,19 +25,21 @@ typedef struct _codec_t
   int pass_through;
   thread_struct *threads;
   AVFrame *inbound_frame;
+  AVRational inbound_timebase;
 
 } codec_t;
 
-static void process(ID3ASFilterContext *context, AVFrame *frame)
+static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational timebase)
 {
   codec_t *this = context->priv_data;
 
   if (this->pass_through) {
-    send_to_graph(context, frame);
+    send_to_graph(context, frame, timebase);
   }
   else {
 
     this->inbound_frame = frame;
+    this->inbound_timebase = timebase;
 
     for (int i = 0; i < context->num_downstream_filters; i++) {
       pthread_mutex_lock(&this->threads[i].trigger_mutex);
@@ -60,7 +62,7 @@ static void *thread_proc(void *data)
   do {
     pthread_cond_wait(&this->trigger, &this->trigger_mutex);
 
-    this->downstream_filter->filter->execute(this->downstream_filter, this->codec_t->inbound_frame);
+    this->downstream_filter->filter->execute(this->downstream_filter, this->codec_t->inbound_frame, this->codec_t->inbound_timebase);
 
     pthread_mutex_lock(&this->complete_mutex);
     pthread_cond_signal(&this->complete);

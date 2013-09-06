@@ -34,6 +34,7 @@ void id3as_filters_register_all()
   REGISTER_FILTER(stereo_splitter);
   REGISTER_FILTER(effects_processor);
   REGISTER_FILTER(parallel);
+  REGISTER_FILTER(async_parallel);
 }
 
 ID3ASFilter *find_filter(char *name) 

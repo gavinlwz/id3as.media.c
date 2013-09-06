@@ -63,6 +63,11 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
 {
   codec_t *this = (codec_t *) context->priv_data;
 
+  if (this->channel_layout != AV_CH_LAYOUT_STEREO) {
+    ERRORFMT("Invalid channel layout %d - can only do stereo\n", this->channel_layout);
+    exit(1);
+  }
+
   this->num_channels = av_get_channel_layout_nb_channels(this->channel_layout);
   this->bytes_per_sample = this->num_channels * av_get_bytes_per_sample(this->sample_format);
 
@@ -112,6 +117,7 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
 }
 
 static void split_fltp(AVFrame *src, AVFrame *left, AVFrame *right) {
+
   left->data[0] = src->data[0];
   left->linesize[0] = src->linesize[0];
   left->nb_samples = src->nb_samples;

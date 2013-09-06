@@ -27,7 +27,6 @@ typedef struct _codec_t
 
 } codec_t;
 
-static void split_s16p(AVFrame *src, AVFrame *left, AVFrame *right);
 static void split_fltp(AVFrame *src, AVFrame *left, AVFrame *right);
 
 static void process(ID3ASFilterContext *context, AVFrame *frame)
@@ -59,7 +58,6 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
       break;
     }
 }
-
 
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options) 
 {
@@ -107,10 +105,6 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
 
   switch (this->sample_format) 
     {
-    case AV_SAMPLE_FMT_S16P:
-      this->convert_fun = split_s16p;
-      break;
-
     case AV_SAMPLE_FMT_FLTP:
       this->convert_fun = split_fltp;
       break;
@@ -120,9 +114,6 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
       exit(1);
       break;
     }
-}
-
-static void split_s16p(AVFrame *src, AVFrame *left, AVFrame *right) {
 }
 
 static void split_fltp(AVFrame *src, AVFrame *left, AVFrame *right) {

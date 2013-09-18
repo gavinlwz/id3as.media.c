@@ -136,6 +136,10 @@ static char * get_pixel_format_name(enum PixelFormat pixel_format)
     {
       return "bgr24";
     }
+  else if (pixel_format == AV_PIX_FMT_YUVJ420P) 
+    {
+      return "yuvj420p";
+    }
 
   ERRORFMT("unknown pixel format %d", pixel_format);
   exit(1);

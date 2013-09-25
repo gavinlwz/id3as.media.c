@@ -30,6 +30,8 @@ typedef struct _metadata_t {
   int height;
   int interlaced;
   char *pixel_format_name;
+  int profile;
+  int level;
 
   uint8_t *extradata;
   int extradata_size;
@@ -253,6 +255,8 @@ void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame)
     metadata.width = frame->width;
     metadata.height = frame->height;
     metadata.pixel_format_name = get_pixel_format_name(frame->format);
+    metadata.profile = -1;
+    metadata.level = -1;
     break;
     
   case AVMEDIA_TYPE_AUDIO:
@@ -295,6 +299,8 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
     metadata.height = codec_context->height;
     metadata.interlaced = codec_context->flags & CODEC_FLAG_INTERLACED_DCT ? 1 : 0;
     metadata.pixel_format_name= get_pixel_format_name(codec_context->pix_fmt);
+    metadata.profile = codec_context->profile;
+    metadata.level = codec_context->level;
     break;
     
   case AVMEDIA_TYPE_AUDIO:
@@ -383,9 +389,12 @@ static void encode_audio_header(char *output_buffer, int *i, metadata_t *metadat
 
 static void encode_video_header(char *output_buffer, int *i, metadata_t *metadata)
 {
-  ei_encode_tuple_header(output_buffer, i, 11);
+  ei_encode_tuple_header(output_buffer, i, 12);
   ei_encode_atom(output_buffer, i, "video_frame");
   ei_encode_atom(output_buffer, i, metadata->codec_name); // format
+  ei_encode_tuple_header(output_buffer, i, 2); // profile_level
+  ei_encode_long(output_buffer, i, metadata->profile);
+  ei_encode_long(output_buffer, i, metadata->level);
   ei_encode_atom(output_buffer, i, metadata->keyframe ? "iframe" : "bp_frame");  // frame_type
   ei_encode_atom(output_buffer, i, metadata->interlaced ? "true" : "false"); // interlaced
   ei_encode_long(output_buffer, i, metadata->width); // width

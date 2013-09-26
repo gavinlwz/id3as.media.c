@@ -90,6 +90,7 @@ static void do_init(codec_t *this, AVFrame *frame)
   i_mutex_lock(&mutex);
 
   this->context = allocate_video_context(this->codec, this->width, this->height, this->input_pixfmt, this->codec_options);
+
   this->initialised = 1;
 
   i_mutex_unlock(&mutex);

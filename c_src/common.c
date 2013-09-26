@@ -185,6 +185,29 @@ AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, en
   c->width = width;
   c->height = height;
 
+  if (strcmp(codec->name, "libx264") == 0) {
+    AVDictionaryEntry *profileEntry = av_dict_get(codec_options, "profile", NULL, 0);
+
+    if (strcmp(profileEntry->value, "baseline") == 0) {
+      c->profile = FF_PROFILE_H264_BASELINE;
+    }
+    else if (strcmp(profileEntry->value, "main") == 0) {
+      c->profile = FF_PROFILE_H264_MAIN;
+    }
+    else if (strcmp(profileEntry->value, "high") == 0) {
+      c->profile = FF_PROFILE_H264_HIGH;
+    }
+    else if (strcmp(profileEntry->value, "high10") == 0) {
+      c->profile = FF_PROFILE_H264_HIGH_10;
+    }
+    else if (strcmp(profileEntry->value, "high422") == 0) {
+      c->profile = FF_PROFILE_H264_HIGH_422;
+    }
+    else if (strcmp(profileEntry->value, "high444") == 0) {
+      c->profile = FF_PROFILE_H264_HIGH_444;
+    }
+  }
+
   if (avcodec_open2(c, codec, &codec_options) < 0) {
     ERROR("could not open codec");
     exit(1);

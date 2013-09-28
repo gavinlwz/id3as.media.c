@@ -75,6 +75,8 @@ static void do_init(codec_t *this, AVFrame *frame)
     return;
   }
 
+  i_mutex_lock(&mutex);
+
   AVDictionaryEntry *flagsEntry = av_dict_get(this->codec_options, "flags", NULL, 0);
   char flags[255];
   strcpy(flags, flagsEntry ? flagsEntry-> value : "");
@@ -87,9 +89,10 @@ static void do_init(codec_t *this, AVFrame *frame)
   }
   av_dict_set(&this->codec_options, "flags", flags, 0);
 
-  i_mutex_lock(&mutex);
+  this->pkt_size = frame->width * frame->height * 10;  // Should be sufficient space! TODO - bit ugly though :(
+  this->pkt_buffer = malloc(this->pkt_size);
 
-  this->context = allocate_video_context(this->codec, this->width, this->height, this->input_pixfmt, this->codec_options);
+  this->context = allocate_video_context(this->codec, frame->width, frame->height, this->input_pixfmt, this->codec_options);
 
   this->initialised = 1;
 
@@ -103,9 +106,6 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
 
   this->codec = get_encoder(this->codec_name);
   this->codec_options = codec_options;
-
-  this->pkt_size = this->width * this->height * 10;  // Should be sufficient space! TODO - bit ugly though :(
-  this->pkt_buffer = malloc(this->pkt_size);
 }
 
 static const AVOption options[] = {

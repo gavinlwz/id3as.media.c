@@ -32,7 +32,6 @@ int main(int argc, char **argv)
 
   do 
     {
-
       int metadata_size = read_port(PACKET_SIZE, &metadata, &metadata_buffer_size);
       int opaque_size = read_port(PACKET_SIZE, &opaque, &opaque_buffer_size);
       int data_size = read_port(PACKET_SIZE, &data, &data_buffer_size);

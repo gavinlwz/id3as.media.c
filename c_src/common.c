@@ -240,8 +240,8 @@ void set_packet_metadata(AVPacket *pkt, unsigned char *metadata)
   // Packets have PTS / DTS
   ei_decode_version(buf, &index, &version);
   ei_decode_tuple_header(buf, &index, &arity);
-  I_DECODE_LONGLONG(buf, &index, &pkt->pts);
-  I_DECODE_LONGLONG(buf, &index, &pkt->dts);
+  I_DECODE_LONGLONG(buf, &index, (long long *) &pkt->pts);
+  I_DECODE_LONGLONG(buf, &index, (long long *) &pkt->dts);
 }
 
 void set_frame_metadata(AVFrame *frame, unsigned char *metadata) 
@@ -254,7 +254,7 @@ void set_frame_metadata(AVFrame *frame, unsigned char *metadata)
   // Frames just have PTS
   ei_decode_version(buf, &index, &version);
   ei_decode_tuple_header(buf, &index, &arity);
-  I_DECODE_LONGLONG(buf, &index, &frame->pts);
+  I_DECODE_LONGLONG(buf, &index, (long long *) &frame->pts);
 }
 
 void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame)

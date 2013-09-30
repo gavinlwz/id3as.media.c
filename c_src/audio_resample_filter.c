@@ -1,6 +1,6 @@
 #include "id3as_libav.h"
 
-#define MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
+#define MAX_AUDIO_SAMPLES 192000 // 1 second of 192kHz audio
 
 typedef struct _codec_t
 {
@@ -65,20 +65,15 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
   avresample_open(this->resample_context);
 
   // Get the frame
-  this->frame = avcodec_alloc_frame();
+  this->frame = av_frame_alloc();
   this->frame->format = this->output_sample_format;
   this->frame->channel_layout = this->output_channel_layout;
-  this->frame->linesize[0] = MAX_AUDIO_FRAME_SIZE + FF_INPUT_BUFFER_PADDING_SIZE;
-  for (int i = 0; i < AV_NUM_DATA_POINTERS; i++)
-    {
-      this->frame->data[i] = av_malloc(this->frame->linesize[0]);
-    }
+  this->frame->nb_samples = MAX_AUDIO_SAMPLES;
+  this->max_samples = MAX_AUDIO_SAMPLES;
+  av_frame_get_buffer(this->frame, 32);
   
   this->output_num_channels = av_get_channel_layout_nb_channels(this->output_channel_layout);
   this->output_bytes_per_sample = av_get_bytes_per_sample(this->frame->format);
-
-  this->max_samples = this->frame->linesize[0] / 
-    (av_get_channel_layout_nb_channels(this->output_channel_layout) * av_get_bytes_per_sample(this->frame->format));
 }
 
 static const AVOption options[] = {

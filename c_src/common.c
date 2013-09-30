@@ -155,6 +155,7 @@ AVCodecContext *allocate_audio_context(AVCodec *codec, int sample_rate, int chan
   c->sample_rate = sample_rate;
   c->channel_layout = channel_layout;
   c->channels = av_get_channel_layout_nb_channels(channel_layout);
+  c->refcounted_frames = 1;
 
   int rc = avcodec_open2(c, codec, &codec_options); 
   if (rc < 0) {
@@ -184,6 +185,7 @@ AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, en
   c->pix_fmt = pixfmt;
   c->width = width;
   c->height = height;
+  c->refcounted_frames = 1;
 
   if (strcmp(codec->name, "libx264") == 0) {
     AVDictionaryEntry *profileEntry = av_dict_get(codec_options, "profile", NULL, 0);

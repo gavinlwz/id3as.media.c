@@ -1,6 +1,6 @@
 #include "id3as_libav.h"
 
-#define MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
+#define MAX_AUDIO_SAMPLES 192000 // 1 second of 192khz
 
 enum SplitMode {
   LEFT_ONLY,
@@ -71,23 +71,17 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
   this->num_channels = av_get_channel_layout_nb_channels(this->channel_layout);
   this->bytes_per_sample = this->num_channels * av_get_bytes_per_sample(this->sample_format);
 
-  this->left_frame = avcodec_alloc_frame();
+  this->left_frame = av_frame_alloc();
   this->left_frame->format = this->sample_format;
   this->left_frame->channel_layout = AV_CH_LAYOUT_MONO;
-  this->left_frame->linesize[0] = MAX_AUDIO_FRAME_SIZE + FF_INPUT_BUFFER_PADDING_SIZE;
-  for (int i = 0; i < AV_NUM_DATA_POINTERS; i++)
-    {
-      this->left_frame->data[i] = av_malloc(this->left_frame->linesize[0]);
-    }
+  this->left_frame->nb_samples = MAX_AUDIO_SAMPLES;
+  av_frame_get_buffer(this->left_frame, 32);
 
-  this->right_frame = avcodec_alloc_frame();
+  this->right_frame = av_frame_alloc();
   this->right_frame->format = this->sample_format;
   this->right_frame->channel_layout = AV_CH_LAYOUT_MONO;
-  this->right_frame->linesize[0] = MAX_AUDIO_FRAME_SIZE + FF_INPUT_BUFFER_PADDING_SIZE;
-  for (int i = 0; i < AV_NUM_DATA_POINTERS; i++)
-    {
-      this->right_frame->data[i] = av_malloc(this->right_frame->linesize[0]);
-    }
+  this->left_frame->nb_samples = MAX_AUDIO_SAMPLES;
+  av_frame_get_buffer(this->right_frame, 32);
 
   if (strcmp(this->split_mode, "left_only") == 0) {
     this->split_mode_enum = LEFT_ONLY;

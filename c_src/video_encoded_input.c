@@ -44,6 +44,8 @@ static void process(ID3ASFilterContext *context,
       this->frame->opaque = &o;
 
       send_to_graph(context, this->frame, NINETY_KHZ);
+
+      av_frame_unref(this->frame);
     }
 }
 
@@ -55,7 +57,7 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
 
   this->context = allocate_video_context(this->codec, this->width, this->height, this->pixfmt, codec_options);
 
-  this->frame = avcodec_alloc_frame();
+  this->frame = av_frame_alloc();
 }
 
 static const AVOption options[] = {

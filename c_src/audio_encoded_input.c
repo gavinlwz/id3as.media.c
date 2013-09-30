@@ -56,6 +56,8 @@ static void process(ID3ASFilterContext *context,
 
 	  pkt.pts += time_delta;
 	  pkt.dts += time_delta;
+
+	  av_frame_unref(this->frame);
 	}
 
       // Note: the docs suggest (http://ffmpeg.org/doxygen/trunk/group__lavc__decoding.html#ga834bb1b062fbcc2de4cf7fb93f154a3e) that

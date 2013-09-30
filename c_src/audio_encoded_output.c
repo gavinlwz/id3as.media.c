@@ -133,16 +133,12 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
   this->context = allocate_audio_context(this->codec, this->sample_rate, this->channel_layout, this->sample_format, codec_options);
 
   // Get the frame
-  this->frame = avcodec_alloc_frame();
+  this->frame = av_frame_alloc();
   this->frame->nb_samples     = this->context->frame_size;
   this->frame->format         = this->context->sample_fmt;
   this->frame->channel_layout = this->context->channel_layout;
 
-  av_samples_alloc(this->frame->data, &this->frame->linesize[0],
-		   this->context->channels,
-		   this->context->frame_size,
-		   this->sample_format,
-		   1);
+  av_frame_get_buffer(this->frame, 32);
 
   av_samples_alloc(this->operating_buffer, 
 		   &this->operating_buffer_size_in_bytes,

@@ -43,12 +43,12 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
 {
   codec_t *this = context->priv_data;
 
-  this->output_frame = avcodec_alloc_frame();
+  this->output_frame = av_frame_alloc();
   this->output_frame->format = this->output_pixfmt;
   this->output_frame->width = this->output_width;
   this->output_frame->height = this->output_height;
 
-  avpicture_alloc((AVPicture *)this->output_frame, this->output_pixfmt, this->output_width, this->output_height);
+  av_frame_get_buffer(this->output_frame, 32);
 
   this->initialised = 0;
 }

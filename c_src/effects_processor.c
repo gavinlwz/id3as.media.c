@@ -41,8 +41,6 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
       exit(-1);
     }
 
-    //fprintf(stderr, "Input PTS %ld, output PTS %ld\n", frame->pts, this->output_frame->pts);
-    //fprintf(stderr, "Input timebase %d/%d, output timebase %d/%d\n", timebase.num, timebase.den, this->output_timebase.num, this->output_timebase.den);
     send_to_graph(context, this->output_frame, this->output_timebase);
 
     av_frame_unref(this->output_frame);

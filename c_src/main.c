@@ -1,57 +1,67 @@
 #include "id3as_libav.h"
 #include <libavfilter/avfilter.h>
 
-static ID3ASFilterContext *initialise(char *buffer);
+#define CUSTOM_VARARGS_READ_PROCESSOR NULL
+
+static ID3ASFilterContext *build_graph(char *buffer);
 static ID3ASFilterContext *read_filter(char *buf, int *index);
 static AVDictionary *read_params(char *buf, int *index);
 
+static ID3ASFilterContext *input;
+
+void initialise(void *initialisation_data, int length) 
+{
+  input = build_graph((char *) initialisation_data);
+}
+
+void process_frame(void *metadata, int metadata_size, void *frame_info, int frame_info_size) 
+{
+  static unsigned char *data = NULL;
+  static unsigned int data_buffer_size = 0;
+
+  int data_size = read_port(PACKET_SIZE, &data, &data_buffer_size);
+
+  input->filter->execute(input, 
+			 metadata, metadata_size,
+			 frame_info, frame_info_size,
+			 data, data_size);
+}
+
+void command_loop() 
+{
+  char *buf = NULL;
+  char *command;
+  int index = 0;
+
+  while (read_port_command(PACKET_SIZE, SUBSYSTEM, (unsigned char **) &buf, &command, &index) > 0) 
+    {
+      char *initialisation_data, *metadata, *frame_info;
+      int length1, length2, length3;
+
+      START_MATCH()
+	HANDLE_MATCH2(initialise, "~b", initialisation_data, length1)
+	HANDLE_MATCH4(process_frame, "~b~b", metadata, length2, frame_info, length3)
+
+	HANDLE_UNMATCHED()
+	free(command);
+      index = 0;
+    }
+}
+
 int main(int argc, char **argv) 
 {
-  unsigned char *metadata = NULL;
-  unsigned int metadata_buffer_size = 0;
-
-  unsigned char *opaque = NULL;
-  unsigned int opaque_buffer_size = 0;
-
-  unsigned char *data = NULL;
-  unsigned int data_buffer_size = 0;
-
   //av_log_set_level(AV_LOG_DEBUG);
   avcodec_register_all();
   avfilter_register_all();
 
   id3as_filters_register_all();
 
-  if (!read_port(PACKET_SIZE, &data, &data_buffer_size))
-    {
-      fprintf(stderr, "Failed to read initialisation packet");
-      exit(-1);
-    }
-
-  ID3ASFilterContext *input = initialise((char *)data);
-
-  do 
-    {
-      int metadata_size = read_port(PACKET_SIZE, &metadata, &metadata_buffer_size);
-      int opaque_size = read_port(PACKET_SIZE, &opaque, &opaque_buffer_size);
-      int data_size = read_port(PACKET_SIZE, &data, &data_buffer_size);
-
-      if (metadata_size < 0 || data_size < 0 || opaque_size < 0)
-	{
-	  break;
-	}
-
-      input->filter->execute(input, 
-			     metadata, metadata_size,
-			     opaque, opaque_size,
-			     data, data_size);
-    }
-  while (1);
+  command_loop();
 
   return 0;
 }
 
-static ID3ASFilterContext *initialise(char *buf) 
+static ID3ASFilterContext *build_graph(char *buf) 
 {
   int index = 0;
   int version;

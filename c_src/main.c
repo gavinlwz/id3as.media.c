@@ -7,10 +7,13 @@ static ID3ASFilterContext *build_graph(char *buffer);
 static ID3ASFilterContext *read_filter(char *buf, int *index);
 static AVDictionary *read_params(char *buf, int *index);
 
-static ID3ASFilterContext *input;
+ID3ASFilterContext *input;
+int sync_mode;
 
-void initialise(void *initialisation_data, int length) 
+void initialise(char *mode, void *initialisation_data, int length) 
 {
+  sync_mode = (strncmp(mode, "async", 5) != 0);
+
   input = build_graph((char *) initialisation_data);
 }
 
@@ -25,6 +28,16 @@ void process_frame(void *metadata, int metadata_size, void *frame_info, int fram
 			 metadata, metadata_size,
 			 frame_info, frame_info_size,
 			 data, data_size);
+
+  if (sync_mode) {
+    write_done();
+  }
+  
+}
+
+void flush() 
+{
+  //  input->filter->flush();
 }
 
 void command_loop() 
@@ -35,12 +48,14 @@ void command_loop()
 
   while (read_port_command(PACKET_SIZE, SUBSYSTEM, (unsigned char **) &buf, &command, &index) > 0) 
     {
-      char *initialisation_data, *metadata, *frame_info;
-      int length1, length2, length3;
+      void *initialisation_data = NULL, *metadata = NULL, *frame_info = NULL;
+      char *mode = NULL;
+      long length1, length2, length3;
 
       START_MATCH()
-	HANDLE_MATCH2(initialise, "~b", initialisation_data, length1)
+	HANDLE_MATCH3(initialise, "~a~b", mode, initialisation_data, length1)
 	HANDLE_MATCH4(process_frame, "~b~b", metadata, length2, frame_info, length3)
+	HANDLE_MATCH0(flush)
 
 	HANDLE_UNMATCHED()
 	free(command);

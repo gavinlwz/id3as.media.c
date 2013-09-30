@@ -50,6 +50,8 @@ struct _sized_buffer
   int size;
 };
 
+extern int sync_mode;
+
 //******************************************************************************
 // Utility functions
 //******************************************************************************
@@ -66,6 +68,7 @@ void send_to_graph(ID3ASFilterContext *processor, AVFrame *frame, AVRational tim
 void set_packet_metadata(AVPacket *pkt, unsigned char *metadata);
 void set_frame_metadata(AVFrame *frame, unsigned char *metadata);
 
+void write_done();
 void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame);
 void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, sized_buffer *opaque);
 

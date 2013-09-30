@@ -104,6 +104,8 @@ typedef struct _thread_struct_t
   ID3ASFilterContext *context;
   ID3ASFilterContext *downstream_filter;
   queue_root_t inbound_frame_queue;
+  pthread_cond_t complete;
+  pthread_mutex_t complete_mutex;
 
 } thread_struct;
 
@@ -138,6 +140,12 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
 
       ADD_TO_QUEUE(this->threads[i].inbound_frame_queue, frame_entry);
     }
+
+    if (sync_mode) {
+      for (int i = 0; i < context->num_downstream_filters; i++) {
+	pthread_cond_wait(&this->threads[i].complete, &this->threads[i].complete_mutex);
+      }
+    }
   }
 }
 
@@ -164,6 +172,12 @@ static void *thread_proc(void *data)
       }
     } while (inbound != NULL);
 
+    if (sync_mode) {
+      pthread_mutex_lock(&this->complete_mutex);
+      pthread_cond_signal(&this->complete);
+      pthread_mutex_unlock(&this->complete_mutex);
+    }
+
   } while(1);
 
   return 0;
@@ -180,13 +194,16 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
     this->pass_through = 0;
     this->threads = (thread_struct *) malloc(sizeof(thread_struct) * context->num_downstream_filters);
 
-
     for (int i = 0; i < context->num_downstream_filters; i++)
       {
 	this->threads[i].thread_id = thread_id++;
 	this->threads[i].context = context;
 	this->threads[i].downstream_filter = context->downstream_filters[i];
 	this->threads[i].codec_t = this;
+	pthread_cond_init(&this->threads[i].complete, NULL);
+	pthread_mutex_init(&this->threads[i].complete_mutex, NULL);
+	pthread_mutex_lock(&this->threads[i].complete_mutex);
+
 	INIT_QUEUE(this->threads[i].inbound_frame_queue);
 
 	pthread_create(&this->threads[i].thread, NULL, &thread_proc, &this->threads[i]);

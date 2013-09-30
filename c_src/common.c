@@ -257,6 +257,30 @@ void set_frame_metadata(AVFrame *frame, unsigned char *metadata)
   I_DECODE_LONGLONG(buf, &index, (long long *) &frame->pts);
 }
 
+static int encode_done(char *output_buffer) 
+{
+  int i = 0;
+
+  ei_encode_version(output_buffer, &i);
+  ei_encode_atom(output_buffer, &i, "done");
+
+  return i;
+}
+
+void write_done() {
+
+  static char *output_buffer = NULL;
+  static int buffer_size = 0;
+
+  int bytes_required = encode_done(NULL);
+
+  resize_buffer(bytes_required, &output_buffer, &buffer_size);
+
+  encode_done(output_buffer);
+
+  write_data(output_buffer, bytes_required);
+}
+
 void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame)
 {
   i_mutex_lock(&mutex);

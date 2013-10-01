@@ -11,8 +11,6 @@ typedef struct _codec_t
   int output_width;
   int output_height;
 
-  AVFrame *output_frame;
-
 } codec_t;
 
 static void do_init(codec_t *this, AVFrame *frame);
@@ -24,17 +22,28 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
   do_init(this, frame);
 
   if (this->convert_context) {
-    
+
+    AVFrame *output_frame = av_frame_alloc();
+
+    output_frame->format = this->output_pixfmt;
+    output_frame->width = this->output_width;
+    output_frame->height = this->output_height;
+
+    av_frame_get_buffer(output_frame, 32);
+
     sws_scale(this->convert_context,
 	      (const uint8_t * const *) frame->data, frame->linesize, 0, frame->height, 
-	      this->output_frame->data, this->output_frame->linesize);  
+	      output_frame->data, output_frame->linesize);  
 
-    // This copies the properties, including allocating a copy of the side_data.
-    // There's no need to free since a) there's no API to do so and b) copy_props
-    // checks if there is already side_data on the dest and free it itself.
-    av_frame_copy_props(this->output_frame, frame);
+    av_frame_copy_props(output_frame, frame);
+
+    output_frame->format = this->output_pixfmt;
+    output_frame->width = this->output_width;
+    output_frame->height = this->output_height;
     
-    send_to_graph(context, this->output_frame, timebase);
+    send_to_graph(context, output_frame, timebase);
+
+    av_frame_free(&output_frame);
   }
   else {
     send_to_graph(context, frame, timebase);
@@ -49,13 +58,6 @@ static void flush(ID3ASFilterContext *context)
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options) 
 {
   codec_t *this = context->priv_data;
-
-  this->output_frame = av_frame_alloc();
-  this->output_frame->format = this->output_pixfmt;
-  this->output_frame->width = this->output_width;
-  this->output_frame->height = this->output_height;
-
-  av_frame_get_buffer(this->output_frame, 32);
 
   this->initialised = 0;
 }

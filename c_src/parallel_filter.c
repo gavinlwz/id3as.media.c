@@ -53,6 +53,11 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
   }
 }
 
+static void flush(ID3ASFilterContext *context) 
+{
+  flush_graph(context);
+}
+
 static void *thread_proc(void *data) 
 {
   thread_struct *this = (thread_struct *) data;
@@ -119,6 +124,7 @@ ID3ASFilter id3as_parallel_filter = {
   .name = "parallel",
   .init = init,
   .execute = process,
+  .flush = flush,
   .priv_data_size = sizeof(codec_t),
   .priv_class = &class
 };

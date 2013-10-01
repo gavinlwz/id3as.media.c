@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <ei.h>
+#include <inttypes.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/mem.h>
@@ -37,6 +38,7 @@ struct _ID3ASFilter
 {
   char *name;
   void (*execute)();
+  void (*flush)();
   void (*init)(ID3ASFilterContext *context, AVDictionary *codec_options);
   int priv_data_size;
   const AVClass *priv_class;
@@ -64,6 +66,7 @@ ID3ASFilterContext *allocate_instance(ID3ASFilter *filter,
 				      int num_downstream_filters);
 
 void send_to_graph(ID3ASFilterContext *processor, AVFrame *frame, AVRational timebase);
+void flush_graph(ID3ASFilterContext *this);
 
 void set_packet_metadata(AVPacket *pkt, unsigned char *metadata);
 void set_frame_metadata(AVFrame *frame, unsigned char *metadata);

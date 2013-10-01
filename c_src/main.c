@@ -37,7 +37,7 @@ void process_frame(void *metadata, int metadata_size, void *frame_info, int fram
 
 void flush() 
 {
-  //  input->filter->flush();
+  input->filter->flush();
 }
 
 void command_loop() 

@@ -60,6 +60,14 @@ void send_to_graph(ID3ASFilterContext *this, AVFrame *frame, AVRational timebase
     }
 }
 
+void flush_graph(ID3ASFilterContext *this)
+{
+  for (int i = 0; i < this->num_downstream_filters; i++)
+    {
+      this->downstream_filters[i]->filter->flush(this->downstream_filters[i]);
+    }
+}
+
 AVCodec *get_encoder(char *codec_name)
 {
   AVCodec *codec = NULL;
@@ -326,6 +334,9 @@ void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame)
 
 void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, sized_buffer *opaque)
 {
+  // file_trace("opaque size is %d (%ld)\n", opaque->size, pkt->pts);
+  // file_dump(opaque->data, opaque->size);
+
   i_mutex_lock(&mutex);
 
   metadata_t metadata = {

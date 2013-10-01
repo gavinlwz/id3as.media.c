@@ -91,6 +91,7 @@ typedef struct _frame_entry_t
   queue_entry_t queue_entry;
   AVFrame *frame;
   AVRational timebase;
+  int exit_thread;
 
 } frame_entry_t;
 
@@ -131,6 +132,7 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
       frame_entry_t *frame_entry = (frame_entry_t *) malloc(sizeof(frame_entry_t));
       frame_entry->timebase = timebase;
       frame_entry->frame = av_frame_clone(frame);
+      frame_entry->exit_thread = 0;
 
       sized_buffer *opaque = (sized_buffer *) malloc(sizeof(sized_buffer));
       opaque->size = ((sized_buffer *) frame->opaque)->size;
@@ -149,6 +151,27 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
   }
 }
 
+static void flush(ID3ASFilterContext *context) 
+{
+  codec_t *this = context->priv_data;
+
+  if (!this->pass_through) {
+    for (int i = 0; i < context->num_downstream_filters; i++) {
+
+      frame_entry_t *frame_entry = (frame_entry_t *) malloc(sizeof(frame_entry_t));
+      frame_entry->exit_thread = 1;
+
+      ADD_TO_QUEUE(this->threads[i].inbound_frame_queue, frame_entry);
+    }
+
+    for (int i = 0; i < context->num_downstream_filters; i++) {
+      pthread_cond_wait(&this->threads[i].complete, &this->threads[i].complete_mutex);
+    }
+  }
+
+  flush_graph(context);
+}
+
 static void *thread_proc(void *data) 
 {
   thread_struct *this = (thread_struct *) data;
@@ -161,8 +184,18 @@ static void *thread_proc(void *data)
     do {
 
       REMOVE_FROM_QUEUE(this->inbound_frame_queue, inbound);
-     
+
       if (inbound != NULL) {
+
+	if (inbound->exit_thread) {
+	  this->downstream_filter->filter->flush(this->downstream_filter);
+
+	  pthread_mutex_lock(&this->complete_mutex);
+	  pthread_cond_signal(&this->complete);
+	  pthread_mutex_unlock(&this->complete_mutex);
+	  return NULL;
+	}
+
 	this->downstream_filter->filter->execute(this->downstream_filter, inbound->frame, inbound->timebase);
 
 	free(((sized_buffer *)inbound->frame->opaque)->data);
@@ -227,6 +260,7 @@ ID3ASFilter id3as_async_parallel_filter = {
   .name = "async_parallel",
   .init = init,
   .execute = process,
+  .flush = flush,
   .priv_data_size = sizeof(codec_t),
   .priv_class = &class
 };

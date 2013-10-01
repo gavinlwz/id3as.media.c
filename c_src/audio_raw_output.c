@@ -15,6 +15,10 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
   write_output_from_frame(this->pin_name, this->stream_id, frame);
 }
 
+static void flush(ID3ASFilterContext *context) 
+{
+}
+
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
 {
 }
@@ -36,6 +40,7 @@ ID3ASFilter id3as_output_raw_audio_filter = {
   .name = "raw audio output",
   .init = init,
   .execute = process,
+  .flush = flush,
   .priv_data_size = sizeof(codec_t),
   .priv_class = &class
 };

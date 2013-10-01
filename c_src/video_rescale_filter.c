@@ -39,6 +39,11 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
   }
 }
 
+static void flush(ID3ASFilterContext *context) 
+{
+  flush_graph(context);
+}
+
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options) 
 {
   codec_t *this = context->priv_data;
@@ -95,6 +100,7 @@ ID3ASFilter id3as_rescale_video_filter = {
   .name = "video rescaler",
   .init = init,
   .execute = process,
+  .flush = flush,
   .priv_data_size = sizeof(codec_t),
   .priv_class = &class
 };

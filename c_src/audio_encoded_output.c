@@ -124,6 +124,11 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
   this->current_sample_offset = this->current_sample_offset - samples_used;
 }
 
+static void flush(ID3ASFilterContext *context) 
+{
+  flush_graph(context);
+}
+
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
 {
   codec_t *this = context->priv_data;
@@ -200,6 +205,7 @@ ID3ASFilter id3as_output_encoded_audio_filter = {
   .name = "encoded audio output",
   .init = init,
   .execute = process,
+  .flush = flush,
   .priv_data_size = sizeof(codec_t),
   .priv_class = &class
 };

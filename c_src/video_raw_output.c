@@ -31,6 +31,11 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
   // write_output_from_frame(this->pin_name, this->context, frame, this->output_data, this->output_data_size);
 }
 
+static void flush(ID3ASFilterContext *context) 
+{
+  flush_graph(context);
+}
+
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options) 
 {
   codec_t *this = context->priv_data;
@@ -104,6 +109,7 @@ ID3ASFilter id3as_output_raw_video_filter = {
   .name = "raw video output",
   .init = init,
   .execute = process,
+  .flush = flush,
   .priv_data_size = sizeof(codec_t),
   .priv_class = &class
 };

@@ -59,6 +59,11 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
     }
 }
 
+static void flush(ID3ASFilterContext *context) 
+{
+  flush_graph(context);
+}
+
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options) 
 {
   codec_t *this = (codec_t *) context->priv_data;
@@ -146,6 +151,7 @@ ID3ASFilter id3as_stereo_splitter_filter = {
   .name = "stereo splitter",
   .init = init,
   .execute = process,
+  .flush = flush,
   .priv_data_size = sizeof(codec_t),
   .priv_class = &class
 };

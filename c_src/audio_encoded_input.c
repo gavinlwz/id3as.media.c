@@ -62,9 +62,14 @@ static void process(ID3ASFilterContext *context,
 
       // Note: the docs suggest (http://ffmpeg.org/doxygen/trunk/group__lavc__decoding.html#ga834bb1b062fbcc2de4cf7fb93f154a3e) that
       // you can get a non-negative return from avcodec_decode_audio4 and a got_frame flag of false, and that in this case
-      // you should feed the next chunk of data to the decoder.  We don't do that, so this might be a bug.  Also don't want to change
+      // you should feed the next chunk of data to the decoder.  We don't do that, so this might be a bug.  But don't want to change
       // it until we find some input that allows it to be tested.
     }
+}
+
+static void flush(ID3ASFilterContext *context) 
+{
+  flush_graph(context);
 }
 
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
@@ -96,6 +101,7 @@ ID3ASFilter id3as_encoded_audio_input = {
   .name = "encoded audio input",
   .init = init,
   .execute = process,
+  .flush = flush,
   .priv_data_size = sizeof(codec_t),
   .priv_class = &class
 };

@@ -134,12 +134,6 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
       frame_entry->frame = av_frame_clone(frame);
       frame_entry->exit_thread = 0;
 
-      sized_buffer *opaque = (sized_buffer *) malloc(sizeof(sized_buffer));
-      opaque->size = ((sized_buffer *) frame->opaque)->size;
-      opaque->data = malloc(opaque->size);
-      memcpy(opaque->data, ((sized_buffer *) frame->opaque)->data, opaque->size);
-      frame_entry->frame->opaque = opaque;
-
       ADD_TO_QUEUE(this->threads[i].inbound_frame_queue, frame_entry);
     }
 
@@ -198,8 +192,6 @@ static void *thread_proc(void *data)
 
 	this->downstream_filter->filter->execute(this->downstream_filter, inbound->frame, inbound->timebase);
 
-	free(((sized_buffer *)inbound->frame->opaque)->data);
-	free(inbound->frame->opaque);
 	av_frame_free(&inbound->frame);
 	free(inbound);
       }

@@ -28,9 +28,11 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
     sws_scale(this->convert_context,
 	      (const uint8_t * const *) frame->data, frame->linesize, 0, frame->height, 
 	      this->output_frame->data, this->output_frame->linesize);  
-    
-    this->output_frame->pts = frame->pts;
-    this->output_frame->opaque = frame->opaque;
+
+    // This copies the properties, including allocating a copy of the side_data.
+    // There's no need to free since a) there's no API to do so and b) copy_props
+    // checks if there is already side_data on the dest and free it itself.
+    av_frame_copy_props(this->output_frame, frame);
     
     send_to_graph(context, this->output_frame, timebase);
   }

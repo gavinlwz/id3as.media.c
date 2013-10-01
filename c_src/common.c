@@ -332,11 +332,8 @@ void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame)
   i_mutex_unlock(&mutex);
 }
 
-void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, sized_buffer *opaque)
+void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, sized_buffer *frame_info)
 {
-  // file_trace("opaque size is %d (%ld)\n", opaque->size, pkt->pts);
-  // file_dump(opaque->data, opaque->size);
-
   i_mutex_lock(&mutex);
 
   metadata_t metadata = {
@@ -375,7 +372,7 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
   }
 
   write_header(&metadata);
-  write_data((char *)opaque->data, opaque->size);
+  write_data((char *)frame_info->data, frame_info->size);
   write_data((char *)pkt->data, pkt->size);
 
   i_mutex_unlock(&mutex);

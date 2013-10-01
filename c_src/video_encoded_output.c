@@ -12,6 +12,7 @@ typedef struct _codec_t
   AVCodecContext *context;
   void *pkt_buffer;
   int pkt_size;
+  frame_info_queue frame_info_queue;
 
   int width;
   int height;
@@ -39,10 +40,12 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
   av_init_packet(&pkt);
   pkt.size = this->pkt_size;
   pkt.data = this->pkt_buffer;
-  
+
   // Rescale PTS from the frame timebase to the codec timebase
   local_frame.pts = av_rescale_q(local_frame.pts, timebase, this->context->time_base);
   local_frame.pict_type = 0;
+
+  queue_frame_info_from_frame(&this->frame_info_queue, &local_frame);
   
   ret = avcodec_encode_video2(this->context, &pkt, &local_frame, &got_packet_ptr);
   
@@ -54,17 +57,22 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
   
   if (got_packet_ptr)
     {
+      frame_info_queue_item *frame_info_queue_item = get_frame_info(&this->frame_info_queue, pkt.pts);
+
       // And rescale back to "erlang time"
       pkt.pts = av_rescale_q(pkt.pts, this->context->time_base, NINETY_KHZ);
       pkt.dts = av_rescale_q(pkt.dts, this->context->time_base, NINETY_KHZ);
       pkt.duration = av_rescale_q(pkt.duration, this->context->time_base, NINETY_KHZ);
-      
-      write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt, local_frame.opaque);
+
+      write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt, &frame_info_queue_item->frame_info);
+
+      free_frame_info(frame_info_queue_item);
     }
 }
 
 static void flush(ID3ASFilterContext *context) 
 {
+  // TODO
   AVPacket pkt;
   int got_packet_ptr = 0;
   int ret = 0;
@@ -91,7 +99,7 @@ static void flush(ID3ASFilterContext *context)
 	  pkt.dts = av_rescale_q(pkt.dts, this->context->time_base, NINETY_KHZ);
 	  pkt.duration = av_rescale_q(pkt.duration, this->context->time_base, NINETY_KHZ);
 
-	  //	  write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt, local_frame.opaque);
+	  //	  write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt, local_frame.frame_info);
 	}
 
     } while (got_packet_ptr);
@@ -121,6 +129,8 @@ static void do_init(codec_t *this, AVFrame *frame)
   this->pkt_buffer = malloc(this->pkt_size);
 
   this->context = allocate_video_context(this->codec, frame->width, frame->height, this->input_pixfmt, this->codec_options);
+
+  init_frame_info_queue(&this->frame_info_queue);
 
   this->initialised = 1;
 

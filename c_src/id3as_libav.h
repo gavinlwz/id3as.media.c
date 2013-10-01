@@ -16,6 +16,7 @@
 
 #define SUBSYSTEM "id3as_codecs"
 #define PACKET_SIZE 4
+#define FRAME_INFO_SIDE_DATA_TYPE 99 // Must not match anything in libavutil/frame.h:AVFrameSideDataType
 
 #define NINETY_KHZ (AVRational){1, 90000}
 
@@ -52,6 +53,19 @@ struct _sized_buffer
   int size;
 };
 
+typedef struct _frame_info_queue_item 
+{
+  int64_t pts;
+  sized_buffer frame_info;
+  struct _frame_info_queue_item *next;
+} frame_info_queue_item;
+
+typedef struct _frame_info_queue
+{
+  frame_info_queue_item *inbound_list_head;
+  frame_info_queue_item *inbound_list_tail;
+} frame_info_queue;
+
 extern int sync_mode;
 
 //******************************************************************************
@@ -73,11 +87,16 @@ void set_frame_metadata(AVFrame *frame, unsigned char *metadata);
 
 void write_done();
 void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame);
-void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, sized_buffer *opaque);
+void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, sized_buffer *frame_info);
 
 AVCodec *get_encoder(char *codec_name);
 AVCodec *get_decoder(char *codec_name);
 AVCodecContext *allocate_audio_context(AVCodec *codec, int sample_rate, int channel_layout, enum AVSampleFormat sample_format, AVDictionary *codec_options);
 AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, enum PixelFormat pixfmt, AVDictionary *codec_options);
 
-
+void queue_frame_info_from_frame(frame_info_queue *queue, AVFrame *frame);
+void queue_frame_info(frame_info_queue *queue, unsigned char *frame_info, unsigned int frame_info_size, int64_t pts);
+void add_frame_info_to_frame(frame_info_queue *queue, AVFrame *frame);
+void init_frame_info_queue(frame_info_queue *queue);
+frame_info_queue_item *get_frame_info(frame_info_queue *queue, int64_t pts);
+void free_frame_info(frame_info_queue_item *frame_info_queue_item);

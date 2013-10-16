@@ -63,17 +63,22 @@ static void process(ID3ASFilterContext *context,
 
 static void flush(ID3ASFilterContext *context) 
 {
-  AVPacket pkt;
+  codec_t *this = context->priv_data;
 
-  av_init_packet(&pkt);
-  pkt.data = NULL;
-  pkt.size = 0;
-
-  while (1) 
+  if (this->codec->capabilities & CODEC_CAP_DELAY) 
     {
-      if (!decode(context, &pkt)) {
-	break;
-      }
+      AVPacket pkt;
+      
+      av_init_packet(&pkt);
+      pkt.data = NULL;
+      pkt.size = 0;
+      
+      while (1) 
+	{
+	  if (!decode(context, &pkt)) {
+	    break;
+	  }
+	}
     }
   
   flush_graph(context);

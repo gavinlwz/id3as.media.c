@@ -27,11 +27,40 @@ static i_mutex_t mutex = INITIALISE_STATIC_MUTEX();
 
 static void do_init(codec_t *this, AVFrame *frame);
 
+static int encode(ID3ASFilterContext *context, AVFrame *frame, AVPacket *pkt) 
+{
+  int got_packet_ptr = 0;
+  int ret = 0;
+  codec_t *this = context->priv_data;
+
+  ret = avcodec_encode_video2(this->context, pkt, frame, &got_packet_ptr);
+      
+  if (ret != 0)
+    {
+      ERRORFMT("avcodec_encode_video2 failed with %d", ret);
+      // exit(-1);
+    }
+      
+  if (got_packet_ptr)
+    {
+      frame_info_queue_item *frame_info_queue_item = get_frame_info(&this->frame_info_queue, pkt->pts);
+
+      // And rescale back to "erlang time"
+      pkt->pts = av_rescale_q(pkt->pts, this->context->time_base, NINETY_KHZ);
+      pkt->dts = av_rescale_q(pkt->dts, this->context->time_base, NINETY_KHZ);
+      pkt->duration = av_rescale_q(pkt->duration, this->context->time_base, NINETY_KHZ);
+
+      write_output_from_packet(this->pin_name, this->stream_id, this->context, pkt, &frame_info_queue_item->frame_info);
+
+      free_frame_info(frame_info_queue_item);
+    }
+
+  return got_packet_ptr;
+}
+
 static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational timebase)
 {
   AVPacket pkt;
-  int got_packet_ptr = 0;
-  int ret = 0;
   codec_t *this = context->priv_data;
   AVFrame local_frame = *frame;
 
@@ -46,36 +75,14 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
   local_frame.pict_type = 0;
 
   queue_frame_info_from_frame(&this->frame_info_queue, &local_frame);
-  
-  ret = avcodec_encode_video2(this->context, &pkt, &local_frame, &got_packet_ptr);
-  
-  if (ret != 0)
-    {
-      ERRORFMT("avcodec_encode_video2 failed with %d", ret);
-      // exit(-1);
-    }
-  
-  if (got_packet_ptr)
-    {
-      frame_info_queue_item *frame_info_queue_item = get_frame_info(&this->frame_info_queue, pkt.pts);
 
-      // And rescale back to "erlang time"
-      pkt.pts = av_rescale_q(pkt.pts, this->context->time_base, NINETY_KHZ);
-      pkt.dts = av_rescale_q(pkt.dts, this->context->time_base, NINETY_KHZ);
-      pkt.duration = av_rescale_q(pkt.duration, this->context->time_base, NINETY_KHZ);
-
-      write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt, &frame_info_queue_item->frame_info);
-
-      free_frame_info(frame_info_queue_item);
-    }
+  encode(context, &local_frame, &pkt);
 }
 
 static void flush(ID3ASFilterContext *context) 
 {
   // TODO
   AVPacket pkt;
-  int got_packet_ptr = 0;
-  int ret = 0;
   codec_t *this = context->priv_data;
 
   do
@@ -84,25 +91,12 @@ static void flush(ID3ASFilterContext *context)
       pkt.size = this->pkt_size;
       pkt.data = this->pkt_buffer;
 
-      ret = avcodec_encode_video2(this->context, &pkt, NULL, &got_packet_ptr);
-      
-      if (ret != 0)
+      if (!encode(context, NULL, &pkt))
 	{
-	  ERRORFMT("avcodec_encode_video2 failed with %d", ret);
-	  // exit(-1);
+	  break;
 	}
       
-      if (got_packet_ptr)
-	{
-	  // And rescale back to "erlang time"
-	  pkt.pts = av_rescale_q(pkt.pts, this->context->time_base, NINETY_KHZ);
-	  pkt.dts = av_rescale_q(pkt.dts, this->context->time_base, NINETY_KHZ);
-	  pkt.duration = av_rescale_q(pkt.duration, this->context->time_base, NINETY_KHZ);
-
-	  //	  write_output_from_packet(this->pin_name, this->stream_id, this->context, &pkt, local_frame.frame_info);
-	}
-
-    } while (got_packet_ptr);
+    } while (1);
 }
 
 static void do_init(codec_t *this, AVFrame *frame) 

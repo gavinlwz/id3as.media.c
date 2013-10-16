@@ -433,9 +433,12 @@ static int encode_header(char *output_buffer, metadata_t *metadata)
 
 static void encode_audio_header(char *output_buffer, int *i, metadata_t *metadata)
 {
-  ei_encode_tuple_header(output_buffer, i, 6);
+  ei_encode_tuple_header(output_buffer, i, 7);
   ei_encode_atom(output_buffer, i, "audio_frame");
   ei_encode_atom(output_buffer, i, metadata->codec_name); // format
+  ei_encode_tuple_header(output_buffer, i, 2); // profile_level
+  ei_encode_long(output_buffer, i, metadata->profile);
+  ei_encode_long(output_buffer, i, metadata->level);
   ei_encode_long(output_buffer, i, metadata->sample_rate);  // sample_rate
   ei_encode_atom(output_buffer, i, metadata->sample_format_name); // sample_fmt
   ei_encode_atom(output_buffer, i, metadata->channel_layout_name); // channel_layout

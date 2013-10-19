@@ -360,6 +360,9 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
     metadata.pixel_format_name= get_pixel_format_name(codec_context->pix_fmt);
     metadata.profile = codec_context->profile;
     metadata.level = codec_context->level;
+    if (metadata.duration == 0) {
+      metadata.duration = (90000 * metadata.time_base.num) / metadata.time_base.den;
+    }
     break;
     
   case AVMEDIA_TYPE_AUDIO:

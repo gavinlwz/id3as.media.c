@@ -85,7 +85,7 @@ void flush_graph(ID3ASFilterContext *this);
 void set_packet_metadata(AVPacket *pkt, unsigned char *metadata);
 void set_frame_metadata(AVFrame *frame, unsigned char *metadata);
 
-void write_done();
+void write_done(char *type);
 void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame);
 void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, sized_buffer *frame_info);
 

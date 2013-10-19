@@ -30,7 +30,7 @@ void process_frame(void *metadata, int metadata_size, void *frame_info, int fram
 			 data, data_size);
 
   if (sync_mode) {
-    write_done();
+    write_done("frame_done");
   }
   
 }
@@ -40,7 +40,7 @@ void flush()
   input->filter->flush(input);
 
   if (sync_mode) {
-    write_done();
+    write_done("flush_done");
   }
 }
 

@@ -265,26 +265,26 @@ void set_frame_metadata(AVFrame *frame, unsigned char *metadata)
   I_DECODE_LONGLONG(buf, &index, (long long *) &frame->pts);
 }
 
-static int encode_done(char *output_buffer) 
+static int encode_done(char *type, char *output_buffer) 
 {
   int i = 0;
 
   ei_encode_version(output_buffer, &i);
-  ei_encode_atom(output_buffer, &i, "done");
+  ei_encode_atom(output_buffer, &i, type);
 
   return i;
 }
 
-void write_done() {
+void write_done(char *type) {
 
   static char *output_buffer = NULL;
   static int buffer_size = 0;
 
-  int bytes_required = encode_done(NULL);
+  int bytes_required = encode_done(type, NULL);
 
   resize_buffer(bytes_required, &output_buffer, &buffer_size);
 
-  encode_done(output_buffer);
+  encode_done(type, output_buffer);
 
   write_data(output_buffer, bytes_required);
 }

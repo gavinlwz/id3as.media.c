@@ -29,6 +29,7 @@ typedef struct _metadata_t {
   int width;
   int height;
   int interlaced;
+  AVRational time_base;
   char *pixel_format_name;
   int profile;
   int level;
@@ -343,6 +344,7 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
     .pts = pkt->pts,
     .dts = pkt->dts,
     .duration = pkt->duration,
+    .time_base = codec_context->time_base,
     .codec_name = avcodec_descriptor_get(codec_context->codec->id)->name,
     .extradata = codec_context->extradata,
     .extradata_size = codec_context->extradata_size
@@ -464,7 +466,9 @@ static void encode_video_header(char *output_buffer, int *i, metadata_t *metadat
   ei_encode_atom(output_buffer, i, metadata->pixel_format_name); // pixel_format
   ei_encode_atom(output_buffer, i, "undefined"); // pixel_aspect_ratio
   ei_encode_atom(output_buffer, i, "undefined"); // display_aspect_ratio
-  ei_encode_atom(output_buffer, i, "undefined"); // frame_rate
+  ei_encode_tuple_header(output_buffer, i, 2); // frame_rate
+  ei_encode_long(output_buffer, i, metadata->time_base.num);
+  ei_encode_long(output_buffer, i, metadata->time_base.den);
   ei_encode_binary(output_buffer, i, metadata->extradata, metadata->extradata_size); // extradata
 }
 

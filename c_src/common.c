@@ -30,6 +30,7 @@ typedef struct _metadata_t {
   int height;
   int interlaced;
   AVRational time_base;
+  AVRational pixel_aspect_ratio;
   char *pixel_format_name;
   int profile;
   int level;
@@ -363,6 +364,7 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
     if (metadata.duration == 0) {
       metadata.duration = (90000 * metadata.time_base.num) / metadata.time_base.den;
     }
+    metadata.pixel_aspect_ratio = codec_context->sample_aspect_ratio;
     break;
     
   case AVMEDIA_TYPE_AUDIO:
@@ -467,7 +469,9 @@ static void encode_video_header(char *output_buffer, int *i, metadata_t *metadat
   ei_encode_long(output_buffer, i, metadata->width); // width
   ei_encode_long(output_buffer, i, metadata->height); // height
   ei_encode_atom(output_buffer, i, metadata->pixel_format_name); // pixel_format
-  ei_encode_atom(output_buffer, i, "undefined"); // pixel_aspect_ratio
+  ei_encode_tuple_header(output_buffer, i, 2); // pixel_aspect_ratio
+  ei_encode_long(output_buffer, i, metadata->pixel_aspect_ratio.num);
+  ei_encode_long(output_buffer, i, metadata->pixel_aspect_ratio.den);
   ei_encode_atom(output_buffer, i, "undefined"); // display_aspect_ratio
   ei_encode_tuple_header(output_buffer, i, 2); // frame_rate
   ei_encode_long(output_buffer, i, metadata->time_base.num);

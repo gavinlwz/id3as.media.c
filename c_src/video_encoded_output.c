@@ -21,6 +21,8 @@ typedef struct _codec_t
   char *codec_name;
   enum PixelFormat input_pixfmt;
 
+  int have_encoded_frames;
+
 } codec_t;
 
 static i_mutex_t mutex = INITIALISE_STATIC_MUTEX();
@@ -33,8 +35,10 @@ static int encode(ID3ASFilterContext *context, AVFrame *frame, AVPacket *pkt)
   int ret = 0;
   codec_t *this = context->priv_data;
 
+  this->have_encoded_frames = 1;
+
   ret = avcodec_encode_video2(this->context, pkt, frame, &got_packet_ptr);
-      
+
   if (ret != 0)
     {
       ERRORFMT("avcodec_encode_video2 failed with %d", ret);
@@ -81,22 +85,23 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
 
 static void flush(ID3ASFilterContext *context) 
 {
-  // TODO
   AVPacket pkt;
   codec_t *this = context->priv_data;
 
-  do
-    {
-      av_init_packet(&pkt);
-      pkt.size = this->pkt_size;
-      pkt.data = this->pkt_buffer;
-
-      if (!encode(context, NULL, &pkt))
-	{
-	  break;
-	}
-      
-    } while (1);
+  if (this->have_encoded_frames) {
+    do
+      {
+	av_init_packet(&pkt);
+	pkt.size = this->pkt_size;
+	pkt.data = this->pkt_buffer;
+	
+	if (!encode(context, NULL, &pkt))
+	  {
+	    break;
+	  }
+	
+      } while (1);
+  }
 }
 
 static void do_init(codec_t *this, AVFrame *frame) 
@@ -123,6 +128,8 @@ static void do_init(codec_t *this, AVFrame *frame)
   this->pkt_buffer = malloc(this->pkt_size);
 
   this->context = allocate_video_context(this->codec, frame->width, frame->height, this->input_pixfmt, this->codec_options);
+
+  this->have_encoded_frames = 0;
 
   init_frame_info_queue(&this->frame_info_queue);
 

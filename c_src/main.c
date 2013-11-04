@@ -69,6 +69,7 @@ void command_loop()
 
 int main(int argc, char **argv) 
 {
+
   //av_log_set_level(AV_LOG_DEBUG);
   avcodec_register_all();
   avfilter_register_all();

@@ -18,8 +18,9 @@ typedef struct _codec_t
 
 static int decode(ID3ASFilterContext *context, AVPacket *pkt) 
 {
+
   codec_t *this = context->priv_data;
-  int got_frame;
+  int got_frame = 0;
   int len = avcodec_decode_video2(this->context, this->frame, &got_frame, pkt);
   
   if (len < 0)
@@ -28,12 +29,12 @@ static int decode(ID3ASFilterContext *context, AVPacket *pkt)
       got_frame = 0;
       //exit(-1);
     }
-  else if (got_frame && len > 0)
+  else if (got_frame)
     {
       add_frame_info_to_frame(&this->frame_info_queue, this->frame);
 
       this->frame->pts = this->frame->pkt_pts;
-      
+
       send_to_graph(context, this->frame, NINETY_KHZ);
       
       av_frame_unref(this->frame);

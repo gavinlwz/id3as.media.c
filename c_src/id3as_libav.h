@@ -66,7 +66,7 @@ typedef struct _frame_info_queue
   frame_info_queue_item *inbound_list_tail;
 } frame_info_queue;
 
-extern int sync_mode;
+extern volatile int sync_mode;
 
 //******************************************************************************
 // Utility functions

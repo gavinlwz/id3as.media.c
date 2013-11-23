@@ -188,24 +188,16 @@ AVCodecContext *allocate_audio_context(AVCodec *codec, int sample_rate, int chan
   return c;
 }
 
-AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, enum PixelFormat pixfmt, AVDictionary *codec_options) 
+AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, enum PixelFormat pixfmt, uint8_t *extradata, int extradata_size, AVDictionary *codec_options) 
 {
   AVCodecContext *c = avcodec_alloc_context3(codec);
 
   c->pix_fmt = pixfmt;
   c->width = width;
   c->height = height;
+  c->extradata_size = extradata_size;
+  c->extradata = extradata;
   c->refcounted_frames = 1;
-
-  if (strcmp(codec->name, "wmv3") == 0) {
-    c->extradata_size = 4;
-    c->extradata = malloc(4);
-    c->extradata[0] = 0x40;
-    c->extradata[1] = 0x09;
-    c->extradata[2] = 0x80;
-    c->extradata[3] = 0x09;
-  }
-
 
   if (strcmp(codec->name, "libx264") == 0) {
     AVDictionaryEntry *profileEntry = av_dict_get(codec_options, "profile", NULL, 0);

@@ -8,6 +8,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/mem.h>
+#include <libavutil/base64.h>
 #include <libswscale/swscale.h>
 #include <libavutil/opt.h>
 #include <libavutil/avutil.h>
@@ -92,7 +93,7 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
 AVCodec *get_encoder(char *codec_name);
 AVCodec *get_decoder(char *codec_name);
 AVCodecContext *allocate_audio_context(AVCodec *codec, int sample_rate, int channel_layout, enum AVSampleFormat sample_format, AVDictionary *codec_options);
-AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, enum PixelFormat pixfmt, AVDictionary *codec_options);
+AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, enum PixelFormat pixfmt, uint8_t *extradata, int extradata_size, AVDictionary *codec_options);
 
 void queue_frame_info_from_frame(frame_info_queue *queue, AVFrame *frame);
 void queue_frame_info(frame_info_queue *queue, unsigned char *frame_info, unsigned int frame_info_size, int64_t pts);

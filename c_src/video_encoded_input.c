@@ -14,6 +14,8 @@ typedef struct _codec_t
   char *codec_name;
   enum PixelFormat pixfmt;
 
+  char *extradata;
+
 } codec_t;
 
 static int decode(ID3ASFilterContext *context, AVPacket *pkt) 
@@ -88,10 +90,18 @@ static void flush(ID3ASFilterContext *context)
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options) 
 {
   codec_t *this = context->priv_data;
+  uint8_t *extradata = NULL;
+  int extradata_size = 0;
 
   this->codec = get_decoder(this->codec_name);
 
-  this->context = allocate_video_context(this->codec, this->width, this->height, this->pixfmt, codec_options);
+  if (this->extradata) 
+    {
+      extradata = malloc(strlen(this->extradata));
+      extradata_size = av_base64_decode(extradata, this->extradata, strlen(this->extradata));
+    }
+
+  this->context = allocate_video_context(this->codec, this->width, this->height, this->pixfmt, extradata, extradata_size, codec_options);
 
   this->frame = av_frame_alloc();
   init_frame_info_queue(&this->frame_info_queue);
@@ -102,6 +112,7 @@ static const AVOption options[] = {
   { "height", "the height", offsetof(codec_t, height), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX },
   { "pixel_format", "the pixel format", offsetof(codec_t, pixfmt), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX },
   { "codec", "the codec name", offsetof(codec_t, codec_name), AV_OPT_TYPE_STRING },
+  { "extradata", "codec extradata", offsetof(codec_t, extradata), AV_OPT_TYPE_STRING, {.str = NULL} },
   { NULL }
 };
 

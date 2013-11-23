@@ -127,7 +127,7 @@ static void do_init(codec_t *this, AVFrame *frame)
   this->pkt_size = frame->width * frame->height * 10;  // Should be sufficient space! TODO - bit ugly though :(
   this->pkt_buffer = malloc(this->pkt_size);
 
-  this->context = allocate_video_context(this->codec, frame->width, frame->height, this->input_pixfmt, this->codec_options);
+  this->context = allocate_video_context(this->codec, frame->width, frame->height, this->input_pixfmt, NULL, 0, this->codec_options);
 
   this->have_encoded_frames = 0;
 

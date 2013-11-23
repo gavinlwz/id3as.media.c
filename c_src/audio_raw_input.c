@@ -30,6 +30,10 @@ static void process(ID3ASFilterContext *context,
       exit(-1); 
     } 
 
+  sized_buffer o = {.data = opaque, .size = opaque_size};
+
+  this->frame->opaque = &o;
+
   send_to_graph(context, this->frame, NINETY_KHZ);
 }
 

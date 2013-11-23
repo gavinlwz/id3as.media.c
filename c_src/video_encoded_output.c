@@ -58,7 +58,7 @@ static int encode(ID3ASFilterContext *context, AVFrame *frame, AVPacket *pkt)
 
       free_frame_info(frame_info_queue_item);
     }
-
+  
   return got_packet_ptr;
 }
 

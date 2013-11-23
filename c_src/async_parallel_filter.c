@@ -159,9 +159,9 @@ static void flush(ID3ASFilterContext *context)
     }
 
     for (int i = 0; i < context->num_downstream_filters; i++) {
-      pthread_cond_wait(&this->threads[i].complete, &this->threads[i].complete_mutex);
+      pthread_join(this->threads[i].thread, NULL);
     }
-  }
+ }
 
   flush_graph(context);
 }
@@ -182,11 +182,9 @@ static void *thread_proc(void *data)
       if (inbound != NULL) {
 
 	if (inbound->exit_thread) {
+
 	  this->downstream_filter->filter->flush(this->downstream_filter);
 
-	  pthread_mutex_lock(&this->complete_mutex);
-	  pthread_cond_signal(&this->complete);
-	  pthread_mutex_unlock(&this->complete_mutex);
 	  return NULL;
 	}
 

@@ -197,6 +197,16 @@ AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, en
   c->height = height;
   c->refcounted_frames = 1;
 
+  if (strcmp(codec->name, "wmv3") == 0) {
+    c->extradata_size = 4;
+    c->extradata = malloc(4);
+    c->extradata[0] = 0x40;
+    c->extradata[1] = 0x09;
+    c->extradata[2] = 0x80;
+    c->extradata[3] = 0x09;
+  }
+
+
   if (strcmp(codec->name, "libx264") == 0) {
     AVDictionaryEntry *profileEntry = av_dict_get(codec_options, "profile", NULL, 0);
 

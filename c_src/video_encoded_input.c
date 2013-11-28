@@ -7,7 +7,7 @@ typedef struct _codec_t
   AVCodec *codec;
   AVCodecContext *context;
   AVFrame *frame;
-  frame_info_queue frame_info_queue;
+  frame_info_queue *frame_info_queue;
 
   int width;
   int height;
@@ -33,7 +33,7 @@ static int decode(ID3ASFilterContext *context, AVPacket *pkt)
     }
   else if (got_frame)
     {
-      add_frame_info_to_frame(&this->frame_info_queue, this->frame);
+      add_frame_info_to_frame(this->frame_info_queue, this->frame);
 
       this->frame->pts = this->frame->pkt_pts;
 
@@ -59,7 +59,7 @@ static void process(ID3ASFilterContext *context,
 
   set_packet_metadata(&pkt, metadata);
   
-  queue_frame_info(&this->frame_info_queue, frame_info, frame_info_size, pkt.pts);
+  queue_frame_info(this->frame_info_queue, frame_info, frame_info_size, pkt.pts);
 
   decode(context, &pkt);
 }

@@ -54,18 +54,21 @@ struct _sized_buffer
   int size;
 };
 
-typedef struct _frame_info_queue_item 
-{
-  int64_t pts;
-  sized_buffer frame_info;
-  struct _frame_info_queue_item *next;
-} frame_info_queue_item;
+enum FrameFlags {
+  DISCONTINUITY = 0x01,
+  BLACK = 0x02,
+  SILENT = 0x04
+};
 
-typedef struct _frame_info_queue
+typedef struct _frame_info 
 {
-  frame_info_queue_item *inbound_list_head;
-  frame_info_queue_item *inbound_list_tail;
-} frame_info_queue;
+  enum FrameFlags flags;
+  int buffer_size;
+  char buffer[0];
+
+} frame_info;
+
+typedef struct _frame_info_queue frame_info_queue;
 
 extern volatile int sync_mode;
 
@@ -88,7 +91,7 @@ void set_frame_metadata(AVFrame *frame, unsigned char *metadata);
 
 void write_done(char *type);
 void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame);
-void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, sized_buffer *frame_info);
+void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, frame_info *frame_info);
 
 AVCodec *get_encoder(char *codec_name);
 AVCodec *get_decoder(char *codec_name);
@@ -98,6 +101,5 @@ AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, en
 void queue_frame_info_from_frame(frame_info_queue *queue, AVFrame *frame);
 void queue_frame_info(frame_info_queue *queue, unsigned char *frame_info, unsigned int frame_info_size, int64_t pts);
 void add_frame_info_to_frame(frame_info_queue *queue, AVFrame *frame);
-void init_frame_info_queue(frame_info_queue *queue);
-frame_info_queue_item *get_frame_info(frame_info_queue *queue, int64_t pts);
-void free_frame_info(frame_info_queue_item *frame_info_queue_item);
+void init_frame_info_queue(frame_info_queue **queue);
+frame_info *get_frame_info(frame_info_queue *queue, int64_t pts);

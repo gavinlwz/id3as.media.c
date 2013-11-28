@@ -14,6 +14,7 @@ typedef struct _metadata_t {
 
   char *pin_name;
   int stream_id;
+  int flags;
 
   int64_t pts;
   int64_t dts;
@@ -336,7 +337,7 @@ void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame)
   i_mutex_unlock(&mutex);
 }
 
-void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, sized_buffer *frame_info)
+void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *codec_context, AVPacket *pkt, frame_info *frame_info)
 {
   i_mutex_lock(&mutex);
 
@@ -344,6 +345,7 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
     .type = codec_context->codec_type,
     .pin_name = pin_name,
     .stream_id = stream_id,
+    .flags = frame_info->flags,
     .pts = pkt->pts,
     .dts = pkt->dts,
     .duration = pkt->duration,
@@ -383,7 +385,7 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
   }
 
   write_header(&metadata);
-  write_data((char *)frame_info->data, frame_info->size);
+  write_data((char *)frame_info->buffer, frame_info->buffer_size);
   write_data((char *)pkt->data, pkt->size);
 
   i_mutex_unlock(&mutex);
@@ -424,7 +426,7 @@ static int encode_header(char *output_buffer, metadata_t *metadata)
   encode_timestamp(output_buffer, &i, metadata->pts); // pts
   encode_timestamp(output_buffer, &i, metadata->dts); // dts
   ei_encode_long(output_buffer, &i, metadata->duration);       // duration
-  ei_encode_atom(output_buffer, &i, "undefined"); // flags
+  ei_encode_long(output_buffer, &i, metadata->flags); // flags
   ei_encode_atom(output_buffer, &i, "undefined"); // data
 
   switch (metadata->type) {

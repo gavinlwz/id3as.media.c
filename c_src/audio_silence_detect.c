@@ -82,9 +82,7 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
 	}
     }
 
-  //  AVFrameSideData *side_data = av_frame_get_side_data(frame, FRAME_INFO_SIDE_DATA_TYPE);
-
-  //  ((frame_info *)side_data->data)->flags |= (this->silent ? SILENT : 0);
+  ((frame_info *) frame->opaque)->flags |= (this->silent ? SILENT : 0);
 
   send_to_graph(context, frame, timebase);
 }

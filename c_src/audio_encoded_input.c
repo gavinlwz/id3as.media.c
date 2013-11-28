@@ -42,10 +42,13 @@ static void process(ID3ASFilterContext *context,
 	}
       else if (got_frame && len > 0)
 	{
-	  sized_buffer o = {.data = opaque, .size = opaque_size};
+	  frame_info *info = malloc(sizeof(frame_info) + opaque_size);
+	  info->flags = 0;
+	  info->buffer_size = opaque_size;
+	  memcpy(info->buffer, opaque, opaque_size);
 
 	  this->frame->pts = this->frame->pkt_pts;
-	  this->frame->opaque = &o;
+	  this->frame->opaque = info;
 
 	  send_to_graph(context, this->frame, NINETY_KHZ);
 
@@ -56,6 +59,8 @@ static void process(ID3ASFilterContext *context,
 
 	  pkt.pts += time_delta;
 	  pkt.dts += time_delta;
+
+	  free(info);
 
 	  av_frame_unref(this->frame);
 	}

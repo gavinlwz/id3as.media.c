@@ -51,9 +51,11 @@ static void process(ID3ASFilterContext *context, AVFrame *frame)
       }
       break;
     case LEFT_RIGHT:
-      for (int i = 0; i < context->num_downstream_filters; i += 2) {
+      for (int i = 0; i < context->num_downstream_filters / 2; i++) {
 	context->downstream_filters[i]->filter->execute(context->downstream_filters[i], this->left_frame);
-	context->downstream_filters[i + 1]->filter->execute(context->downstream_filters[i + 1], this->right_frame);
+      }
+      for (int i = context->num_downstream_filters / 2; i < context->num_downstream_filters; i++) {
+	context->downstream_filters[i]->filter->execute(context->downstream_filters[i], this->right_frame);
       }
       break;
     }
@@ -120,6 +122,7 @@ static void split_fltp(AVFrame *src, AVFrame *left, AVFrame *right) {
   left->data[0] = src->data[0];
   left->linesize[0] = src->linesize[0];
   left->nb_samples = src->nb_samples;
+  left->sample_rate = src->sample_rate;
   left->pts = src->pts;
   left->pkt_pts = src->pkt_pts;
   left->pkt_dts = src->pkt_dts;
@@ -127,6 +130,7 @@ static void split_fltp(AVFrame *src, AVFrame *left, AVFrame *right) {
   right->data[0] = src->data[1];
   right->linesize[0] = src->linesize[1];
   right->nb_samples = src->nb_samples;
+  right->sample_rate = src->sample_rate;
   right->pts = src->pts;
   right->pkt_pts = src->pkt_pts;
   right->pkt_dts = src->pkt_dts;

@@ -72,6 +72,7 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
   this->frame = av_frame_alloc();
   this->frame->format = this->output_sample_format;
   this->frame->channel_layout = this->output_channel_layout;
+  this->frame->sample_rate = this->output_sample_rate;
   this->frame->nb_samples = MAX_AUDIO_SAMPLES;
   this->max_samples = MAX_AUDIO_SAMPLES;
   av_frame_get_buffer(this->frame, 32);

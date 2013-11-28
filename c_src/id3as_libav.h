@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <ei.h>
 #include <inttypes.h>
+#include <float.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/mem.h>

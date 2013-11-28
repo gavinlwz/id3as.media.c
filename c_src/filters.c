@@ -28,6 +28,7 @@ void id3as_filters_register_all()
   REGISTER_FILTER(resample_audio);
   REGISTER_FILTER(rescale_video);
   REGISTER_FILTER(black_detect);
+  REGISTER_FILTER(silence_detect);
   REGISTER_FILTER(output_raw_audio);
   REGISTER_FILTER(output_encoded_audio);
   REGISTER_FILTER(output_raw_video);

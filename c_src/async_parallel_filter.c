@@ -163,7 +163,7 @@ static void flush(ID3ASFilterContext *context)
     }
  }
 
-  flush_graph(context);
+  //  flush_graph(context);
 }
 
 static void *thread_proc(void *data) 

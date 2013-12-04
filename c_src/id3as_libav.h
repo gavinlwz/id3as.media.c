@@ -87,6 +87,9 @@ ID3ASFilterContext *allocate_instance(ID3ASFilter *filter,
 void send_to_graph(ID3ASFilterContext *processor, AVFrame *frame, AVRational timebase);
 void flush_graph(ID3ASFilterContext *this);
 
+void lock_output();
+void unlock_output();
+
 void set_packet_metadata(AVPacket *pkt, unsigned char *metadata);
 void set_frame_metadata(AVFrame *frame, unsigned char *metadata);
 

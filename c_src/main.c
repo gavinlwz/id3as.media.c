@@ -17,16 +17,6 @@ void initialise(char *mode, void *initialisation_data, int length)
   input = build_graph((char *) initialisation_data);
 }
 
-void make_sync() 
-{
-  sync_mode = 1;
-}
-
-void make_async() 
-{
-  sync_mode = 0;
-}
-
 void process_frame(void *metadata, int metadata_size, void *frame_info, int frame_info_size) 
 {
   static unsigned char *data = NULL;
@@ -48,9 +38,7 @@ void flush()
 {
   input->filter->flush(input);
 
-  if (sync_mode) {
-    write_done("flush_done");
-  }
+  write_done("flush_done");
 }
 
 void command_loop() 
@@ -68,8 +56,6 @@ void command_loop()
       START_MATCH()
 	HANDLE_MATCH3(initialise, "~a~b", mode, initialisation_data, length1)
 	HANDLE_MATCH4(process_frame, "~b~b", metadata, length2, frame_info, length3)
-	HANDLE_MATCH0(make_sync)
-	HANDLE_MATCH0(make_async)
 	HANDLE_MATCH0(flush)
 
 	HANDLE_UNMATCHED()

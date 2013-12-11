@@ -154,16 +154,17 @@ static void flush(ID3ASFilterContext *context)
 
       frame_entry_t *frame_entry = (frame_entry_t *) malloc(sizeof(frame_entry_t));
       frame_entry->exit_thread = 1;
-
+      
       ADD_TO_QUEUE(this->threads[i].inbound_frame_queue, frame_entry);
     }
-
+    
     for (int i = 0; i < context->num_downstream_filters; i++) {
       pthread_join(this->threads[i].thread, NULL);
     }
- }
-
-  //  flush_graph(context);
+  }
+  else {
+    flush_graph(context);
+  }
 }
 
 static void *thread_proc(void *data) 

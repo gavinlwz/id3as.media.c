@@ -42,7 +42,6 @@ static int encode(ID3ASFilterContext *context, AVFrame *frame, AVPacket *pkt)
   if (ret != 0)
     {
       ERRORFMT("avcodec_encode_video2 failed with %d", ret);
-      exit(-1);
     }
       
   if (got_packet_ptr)

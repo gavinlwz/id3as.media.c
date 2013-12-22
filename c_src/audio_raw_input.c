@@ -30,11 +30,15 @@ static void process(ID3ASFilterContext *context,
       exit(-1); 
     } 
 
-  sized_buffer o = {.data = opaque, .size = opaque_size};
-
-  this->frame->opaque = &o;
+  frame_info *info = malloc(sizeof(frame_info) + opaque_size);
+  info->flags = 0;
+  info->buffer_size = opaque_size;
+  memcpy(info->buffer, opaque, opaque_size);
+  this->frame->opaque = info;
 
   send_to_graph(context, this->frame, NINETY_KHZ);
+
+  free(info);
 }
 
 static void flush(ID3ASFilterContext *context) 

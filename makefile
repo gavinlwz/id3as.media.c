@@ -26,7 +26,9 @@ HEADERS = $(wildcard *.h)
 $(TARGET): $(OBJECTS)
 	mkdir -p priv
 	$(CC) $(OBJECTS) -Wall $(LDFLAGS) -o $@
+	$(MAKE) -f erlang.mk app
 
 clean:
 	-rm -f *.o
 	-rm -f $(TARGET)
+	$(MAKE) -f erlang.mk clean

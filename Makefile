@@ -6,8 +6,9 @@ LDFLAGS = -L../id3as_common_c/priv -Ldeps/id3as_common_c/priv -L /usr/local/lib 
 UNAME := $(shell uname)
 
 ifeq ($(UNAME), Darwin)
-	CFLAGS += -I /usr/local/lib/erlang/lib/erl_interface-3.7.13/include
-	LDFLAGS += $(FFMPEG_STATIC_LIBS) $(FFMPEG_DYN_LIBS) -lz -lm -lpthread -framework CoreFoundation -framework VideoDecodeAcceleration -framework CoreVideo
+	ERL_DIR = $(shell erl -noshell -eval 'io:format("~p~n", [code:lib_dir(erl_interface)])' -eval 'init:stop()')
+	CFLAGS += -I $(ERL_DIR)/include
+	LDFLAGS += -L$(ERL_DIR)/lib $(FFMPEG_STATIC_LIBS) $(FFMPEG_DYN_LIBS) -lz -lm -lpthread -framework CoreFoundation -framework VideoDecodeAcceleration -framework CoreVideo
 endif
 ifeq ($(UNAME), Linux)
 	LDFLAGS += -Wl,-Bstatic $(FFMPEG_STATIC_LIBS) -Wl,-Bdynamic -lz $(FFMPEG_DYN_LIBS) -lm -lpthread

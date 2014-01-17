@@ -1,6 +1,6 @@
 TARGET = priv/id3as_codecs
 CC = gcc
-CFLAGS = -g -Wall -I../id3as_common_c/c_src -Ideps/id3as_common_c/c_src -I /usr/local/include
+CFLAGS = -g -Wall -I../id3as_common_c/c_src -Ideps/id3as_common_c/c_src -I /usr/local/include -std=c99
 LDFLAGS = -L../id3as_common_c/priv -Ldeps/id3as_common_c/priv -L /usr/local/lib -lid3as_common -lei
 
 UNAME := $(shell uname)

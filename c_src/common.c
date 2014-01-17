@@ -42,13 +42,13 @@ typedef struct _metadata_t {
 
 } metadata_t;
 
-static void write_header(metadata_t *metadata);
+static void write_frame(metadata_t *metadata, char *frame_info, int frame_info_size, char *data, int data_size);
 static void write_data(char *data, int size);
 static void resize_buffer(int bytes_required, char **output_buffer, int *buffer_size);
 static char *get_pixel_format_name(enum PixelFormat pixel_format);
 static char *get_sample_format_name(int sample_format);
 static char *get_channel_layout_name(int channel_layout);
-static int encode_header(char *output_buffer, metadata_t *metadata);
+static int encode_frame(char *output_buffer, metadata_t *metadata, char *frame_info, int frame_info_size, char *data, int data_size);
 static void encode_audio_header(char *output_buffer, int *i, metadata_t *metadata);
 static void encode_video_header(char *output_buffer, int *i, metadata_t *metadata);
 static void encode_timestamp(char *output_buffer, int *i, int64_t timestamp);
@@ -342,8 +342,7 @@ void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame)
     exit(-1);
   }
 
-  write_header(&metadata);
-  write_data((char *)frame->data[0], frame->linesize[0]);
+  write_frame(&metadata, NULL, 0, (char *)frame->data[0], frame->linesize[0]);
   i_mutex_unlock(&mutex);
 }
 
@@ -394,9 +393,7 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
     exit(-1);
   }
 
-  write_header(&metadata);
-  write_data((char *)frame_info->buffer, frame_info->buffer_size);
-  write_data((char *)pkt->data, pkt->size);
+  write_frame(&metadata, (char *)frame_info->buffer, frame_info->buffer_size, (char *)pkt->data, pkt->size);
 
   i_mutex_unlock(&mutex);
 }
@@ -407,21 +404,21 @@ static void write_data(char *data, int size)
   write_buffer_to_port(PACKET_SIZE, (unsigned char *)data, size);
 }
 
-static void write_header(metadata_t *metadata) 
+static void write_frame(metadata_t *metadata, char *frame_info, int frame_info_size, char *data, int data_size)
 {
   static char *output_buffer = NULL;
   static int buffer_size = 0;
 
-  int bytes_required = encode_header(NULL, metadata);
+  int bytes_required = encode_frame(NULL, metadata, frame_info, frame_info_size, data, data_size);
 
   resize_buffer(bytes_required, &output_buffer, &buffer_size);
 
-  encode_header(output_buffer, metadata);
+  encode_frame(output_buffer, metadata, frame_info, frame_info_size, data, data_size);
 
   write_data(output_buffer, bytes_required);
 }
 
-static int encode_header(char *output_buffer, metadata_t *metadata)
+static int encode_frame(char *output_buffer, metadata_t *metadata, char *frame_info, int frame_info_size, char *data, int data_size)
 { 
   int i = 0;
 
@@ -432,12 +429,12 @@ static int encode_header(char *output_buffer, metadata_t *metadata)
   ei_encode_atom(output_buffer, &i, metadata->pin_name);
   ei_encode_tuple_header(output_buffer, &i, 8);
   ei_encode_atom(output_buffer, &i, "frame");
-  ei_encode_atom(output_buffer, &i, "undefined"); // info
+  ei_encode_binary(output_buffer, &i, frame_info, frame_info_size); // info
   encode_timestamp(output_buffer, &i, metadata->pts); // pts
   encode_timestamp(output_buffer, &i, metadata->dts); // dts
   ei_encode_long(output_buffer, &i, metadata->duration);       // duration
   ei_encode_long(output_buffer, &i, metadata->flags); // flags
-  ei_encode_atom(output_buffer, &i, "undefined"); // data
+  ei_encode_binary(output_buffer, &i, data, data_size); // data
 
   switch (metadata->type) {
   case AVMEDIA_TYPE_VIDEO:

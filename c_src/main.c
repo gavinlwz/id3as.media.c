@@ -10,6 +10,8 @@ static AVDictionary *read_params(char *buf, int *index);
 ID3ASFilterContext *input;
 volatile int sync_mode;
 
+static unsigned long long int bytes_read = 0;
+
 void initialise(char *mode, void *initialisation_data, int length) 
 {
   sync_mode = (strncmp(mode, "async", 5) != 0);
@@ -23,6 +25,9 @@ void process_frame(void *metadata, int metadata_size, void *frame_info, int fram
   static unsigned int data_buffer_size = 0;
 
   int data_size = read_port(PACKET_SIZE, &data, &data_buffer_size);
+
+  bytes_read += data_size;
+  // TRACEFMT("IN %llu", bytes_read);
 
   input->filter->execute(input, 
 			 metadata, metadata_size,
@@ -44,24 +49,33 @@ void flush()
 void command_loop() 
 {
   char *buf = NULL;
+  unsigned int buf_size = 0;
   char *command;
   int index = 0;
+  int len;
 
-  while (read_port_command(PACKET_SIZE, SUBSYSTEM, (unsigned char **) &buf, &command, &index) > 0) 
+  do
     {
       void *initialisation_data = NULL, *metadata = NULL, *frame_info = NULL;
       char *mode = NULL;
       long length1, length2, length3;
 
-      START_MATCH()
-	HANDLE_MATCH3(initialise, "~a~b", mode, initialisation_data, length1)
-	HANDLE_MATCH4(process_frame, "~b~b", metadata, length2, frame_info, length3)
-	HANDLE_MATCH0(flush)
+      len = read_port_command(PACKET_SIZE, SUBSYSTEM, (unsigned char **) &buf, &buf_size, &command, &index);
 
-	HANDLE_UNMATCHED()
-	free(command);
-      index = 0;
-    }
+      if (len > 0) {
+	bytes_read += len;
+
+	START_MATCH()
+	  HANDLE_MATCH3(initialise, "~a~b", mode, initialisation_data, length1)
+	  HANDLE_MATCH4(process_frame, "~b~b", metadata, length2, frame_info, length3)
+	  HANDLE_MATCH0(flush)
+	  
+	  HANDLE_UNMATCHED()
+	  free(command);
+	index = 0;
+      }
+
+    } while (len > 0);
 }
 
 int main(int argc, char **argv) 

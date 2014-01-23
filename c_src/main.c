@@ -1,3 +1,7 @@
+#define _GNU_SOURCE             /* See feature_test_macros(7) */
+#include <pthread.h>
+#include <sched.h>
+
 #include "id3as_libav.h"
 #include <libavfilter/avfilter.h>
 
@@ -17,6 +21,14 @@ void initialise(char *mode, void *initialisation_data, int length)
   sync_mode = (strncmp(mode, "async", 5) != 0);
 
   input = build_graph((char *) initialisation_data);
+  /*
+  cpu_set_t cpuset;
+  CPU_ZERO(&cpuset);
+  CPU_SET(0, &cpuset);
+
+  pthread_t current_thread = pthread_self();    
+  pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
+  */
 }
 
 void process_frame(void *metadata, int metadata_size, void *frame_info, int frame_info_size) 
@@ -131,6 +143,8 @@ static ID3ASFilterContext *read_filter(char *buf, int *index)
   I_SKIP_NULL(buf, index);
 
   ID3ASFilter *filter = find_filter(name);
+
+  free(name);
 
   return allocate_instance(filter, params, codec_params, downstream_filters, num_downstream_filters);
 }

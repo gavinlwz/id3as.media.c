@@ -61,42 +61,61 @@ void queue_frame_info(frame_info_queue *queue, unsigned char *frame_info_data, u
 
 void add_frame_info_to_frame(frame_info_queue *queue, AVFrame *frame) 
 {
-  frame_info *frame_inf = get_frame_info(queue, frame->pkt_pts);
+  frame_info *frame_inf = get_frame_info(queue, frame->pkt_pts, 1);
 
   AVFrameSideData *side_data = av_frame_new_side_data(frame, FRAME_INFO_SIDE_DATA_TYPE, sizeof(frame_info) + frame_inf->buffer_size);
 
   memcpy(side_data->data, frame_inf, sizeof(frame_info) + frame_inf->buffer_size);
+
+  free(frame_inf);
 }
 
-frame_info *get_frame_info(frame_info_queue *queue, int64_t pts) 
+static frame_info *remove_from_queue(frame_info_queue *queue, frame_info_queue_item *item, frame_info_queue_item *prev)
+{
+  frame_info *frame_info;
+
+  if (queue->inbound_list_head == item) {
+    queue->inbound_list_head = item->next;
+  } 
+  else {
+    prev->next = item->next;
+  }
+	  
+  if (queue->inbound_list_tail == item) {
+    queue->inbound_list_tail = prev;
+  }
+
+  frame_info = item->frame_info;
+  free(item);
+  
+  return frame_info;
+}
+
+frame_info *get_frame_info(frame_info_queue *queue, int64_t pts, int drop_old_pts) 
 {
   frame_info_queue_item *prev = NULL;
   frame_info_queue_item *current = queue->inbound_list_head;
-  frame_info *frame_info;
 
   while (current) 
     {
-      if (current->pts == pts) 
+      if ((current->pts < pts) && drop_old_pts)
 	{
-	  if (queue->inbound_list_head == current) {
-	    queue->inbound_list_head = current->next;
-	  } 
-	  else {
-	    prev->next = current->next;
-	  }
+	  frame_info_queue_item *t = current;
+	  current = t->next;
+
+	  frame_info *frame_info = remove_from_queue(queue, t, prev);
 	  
-	  if (queue->inbound_list_tail == current) {
-	    queue->inbound_list_tail = prev;
-	  }
-
-	  frame_info = current->frame_info;
-	  free(current);
-
-	  return frame_info;
+	  free(frame_info);
 	}
-
-      prev = current;
-      current = current->next;
+      else if (current->pts == pts) 
+	{
+	  return remove_from_queue(queue, current, prev);
+	}
+      else 
+	{
+	  prev = current;
+	  current = current->next;
+	}
     }
 
   ERRORFMT("Failed to find frame_info for %ld", pts);

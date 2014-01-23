@@ -106,4 +106,4 @@ void queue_frame_info_from_frame(frame_info_queue *queue, AVFrame *frame);
 void queue_frame_info(frame_info_queue *queue, unsigned char *frame_info, unsigned int frame_info_size, int64_t pts);
 void add_frame_info_to_frame(frame_info_queue *queue, AVFrame *frame);
 void init_frame_info_queue(frame_info_queue **queue);
-frame_info *get_frame_info(frame_info_queue *queue, int64_t pts);
+frame_info *get_frame_info(frame_info_queue *queue, int64_t pts, int drop_old_pts);

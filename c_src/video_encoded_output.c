@@ -46,7 +46,7 @@ static int encode(ID3ASFilterContext *context, AVFrame *frame, AVPacket *pkt)
       
   if (got_packet_ptr)
     {
-      frame_info *frame_info = get_frame_info(this->frame_info_queue, pkt->pts);
+      frame_info *frame_info = get_frame_info(this->frame_info_queue, pkt->pts, 0);
 
       // And rescale back to "erlang time"
       pkt->pts = av_rescale_q(pkt->pts, this->context->time_base, NINETY_KHZ);
@@ -111,6 +111,8 @@ static void do_init(codec_t *this, AVFrame *frame)
 
   i_mutex_lock(&mutex);
 
+  this->codec = get_encoder(this->codec_name);
+
   AVDictionaryEntry *flagsEntry = av_dict_get(this->codec_options, "flags", NULL, 0);
   char flags[255];
   strcpy(flags, flagsEntry ? flagsEntry-> value : "");
@@ -140,10 +142,8 @@ static void do_init(codec_t *this, AVFrame *frame)
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options) 
 {
   codec_t *this = context->priv_data;
-  this->initialised = 0;
-
-  this->codec = get_encoder(this->codec_name);
   this->codec_options = codec_options;
+  this->initialised = 0;
 }
 
 static const AVOption options[] = {

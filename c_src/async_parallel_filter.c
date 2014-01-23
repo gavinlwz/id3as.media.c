@@ -6,10 +6,11 @@ struct _codec_t;
 
 #define INIT_QUEUE(QUEUE)\
   (QUEUE).head = NULL;\
-	 (QUEUE).tail = NULL;\
-	 INITIALISE_MUTEX(&(QUEUE).mutex);\
-	 INITIALISE_COND(&(QUEUE).cond);\
-	 (QUEUE).active = 1;
+  (QUEUE).tail = NULL;\
+  (QUEUE).len = 0;\
+  INITIALISE_MUTEX(&(QUEUE).mutex);\
+  INITIALISE_COND(&(QUEUE).cond);\
+  (QUEUE).active = 1;
 
 #define DESTROY_QUEUE(QUEUE, FUN)\
   i_mutex_lock(&(QUEUE).mutex);\
@@ -23,7 +24,7 @@ struct _codec_t;
     }\
   i_mutex_unlock(&(QUEUE).mutex);
 
-#define ADD_TO_QUEUE(QUEUE, ITEM)\
+#define ADD_TO_QUEUE(CONTEXT, QUEUE, ITEM)	\
   i_mutex_lock(&(QUEUE).mutex);\
   (ITEM)->queue_entry.next = NULL;\
   if ((QUEUE).head == NULL)\
@@ -35,8 +36,11 @@ struct _codec_t;
   (QUEUE).tail->next = &(ITEM)->queue_entry;\
     }\
   (QUEUE).tail = &(ITEM)->queue_entry;\
+  (QUEUE).len++;\
   i_mutex_signal(&(QUEUE).cond);\
   i_mutex_unlock(&(QUEUE).mutex);
+
+  // TRACEFMT("%s queue len is %d\n", (CONTEXT)->downstream_filters[0]->filter->name, (QUEUE).len); 
 
 #define WAIT_FOR_QUEUE(QUEUE)\
   i_mutex_lock(&(QUEUE).mutex);\
@@ -65,6 +69,7 @@ struct _codec_t;
     {\
   (QUEUE).head = t->next;\
     }\
+  (QUEUE).len--;\
   ITEM = (void *)t;\
     }\
   i_mutex_unlock(&(QUEUE).mutex);\
@@ -83,6 +88,7 @@ typedef struct _queue_root_t
   int active;
   struct _queue_entry_t *head;
   struct _queue_entry_t *tail;
+  int len;
   
 } queue_root_t;
 
@@ -113,34 +119,36 @@ typedef struct _thread_struct_t
 typedef struct _codec_t
 {
   AVClass *av_class;
-  int pass_through;
   thread_struct *threads;
 
 } codec_t;
 
 static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational timebase)
 {
+  /*
+  for (int i = 0; i < context->num_downstream_filters; i++)
+    {
+      AVFrame *foo = av_frame_clone(frame);
+      context->downstream_filters[i]->filter->execute(context->downstream_filters[i], foo, timebase);
+      av_frame_free(&foo);
+    }
+  return;
+  */
   codec_t *this = context->priv_data;
 
-  if (this->pass_through) {
-    send_to_graph(context, frame, timebase);
+  for (int i = 0; i < context->num_downstream_filters; i++) {
+    
+    frame_entry_t *frame_entry = (frame_entry_t *) malloc(sizeof(frame_entry_t));
+    frame_entry->timebase = timebase;
+    frame_entry->frame = av_frame_clone(frame);
+    frame_entry->exit_thread = 0;
+    
+    ADD_TO_QUEUE(context, this->threads[i].inbound_frame_queue, frame_entry);
   }
-  else {
-
+  
+  if (sync_mode) {
     for (int i = 0; i < context->num_downstream_filters; i++) {
-
-      frame_entry_t *frame_entry = (frame_entry_t *) malloc(sizeof(frame_entry_t));
-      frame_entry->timebase = timebase;
-      frame_entry->frame = av_frame_clone(frame);
-      frame_entry->exit_thread = 0;
-
-      ADD_TO_QUEUE(this->threads[i].inbound_frame_queue, frame_entry);
-    }
-
-    if (sync_mode) {
-      for (int i = 0; i < context->num_downstream_filters; i++) {
-	pthread_cond_wait(&this->threads[i].complete, &this->threads[i].complete_mutex);
-      }
+      pthread_cond_wait(&this->threads[i].complete, &this->threads[i].complete_mutex);
     }
   }
 }
@@ -149,21 +157,16 @@ static void flush(ID3ASFilterContext *context)
 {
   codec_t *this = context->priv_data;
 
-  if (!this->pass_through) {
-    for (int i = 0; i < context->num_downstream_filters; i++) {
-
-      frame_entry_t *frame_entry = (frame_entry_t *) malloc(sizeof(frame_entry_t));
-      frame_entry->exit_thread = 1;
-      
-      ADD_TO_QUEUE(this->threads[i].inbound_frame_queue, frame_entry);
-    }
+  for (int i = 0; i < context->num_downstream_filters; i++) {
     
-    for (int i = 0; i < context->num_downstream_filters; i++) {
-      pthread_join(this->threads[i].thread, NULL);
-    }
+    frame_entry_t *frame_entry = (frame_entry_t *) malloc(sizeof(frame_entry_t));
+    frame_entry->exit_thread = 1;
+    
+    ADD_TO_QUEUE(context, this->threads[i].inbound_frame_queue, frame_entry);
   }
-  else {
-    flush_graph(context);
+  
+  for (int i = 0; i < context->num_downstream_filters; i++) {
+    pthread_join(this->threads[i].thread, NULL);
   }
 }
 
@@ -193,14 +196,15 @@ static void *thread_proc(void *data)
 
 	av_frame_free(&inbound->frame);
 	free(inbound);
-      }
-    } while (inbound != NULL);
 
-    if (sync_mode) {
-      pthread_mutex_lock(&this->complete_mutex);
-      pthread_cond_signal(&this->complete);
-      pthread_mutex_unlock(&this->complete_mutex);
-    }
+        if (sync_mode) {
+          pthread_mutex_lock(&this->complete_mutex);
+          pthread_cond_signal(&this->complete);
+          pthread_mutex_unlock(&this->complete_mutex);
+        }
+      }
+
+    } while (inbound != NULL);
 
   } while(1);
 
@@ -211,29 +215,22 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
 {
   codec_t *this = context->priv_data;
 
-  if (context->num_downstream_filters < 2) {
-    this->pass_through = 1;
-  }
-  else {
-    this->pass_through = 0;
-    this->threads = (thread_struct *) malloc(sizeof(thread_struct) * context->num_downstream_filters);
-
-    for (int i = 0; i < context->num_downstream_filters; i++)
-      {
-	this->threads[i].thread_id = thread_id++;
-	this->threads[i].context = context;
-	this->threads[i].downstream_filter = context->downstream_filters[i];
-	this->threads[i].codec_t = this;
-	pthread_cond_init(&this->threads[i].complete, NULL);
-	pthread_mutex_init(&this->threads[i].complete_mutex, NULL);
-	pthread_mutex_lock(&this->threads[i].complete_mutex);
-
-	INIT_QUEUE(this->threads[i].inbound_frame_queue);
-
-	pthread_create(&this->threads[i].thread, NULL, &thread_proc, &this->threads[i]);
-      }
-
-  }
+  this->threads = (thread_struct *) malloc(sizeof(thread_struct) * context->num_downstream_filters);
+  
+  for (int i = 0; i < context->num_downstream_filters; i++)
+    {
+      this->threads[i].thread_id = thread_id++;
+      this->threads[i].context = context;
+      this->threads[i].downstream_filter = context->downstream_filters[i];
+      this->threads[i].codec_t = this;
+      pthread_cond_init(&this->threads[i].complete, NULL);
+      pthread_mutex_init(&this->threads[i].complete_mutex, NULL);
+      pthread_mutex_lock(&this->threads[i].complete_mutex);
+      
+      INIT_QUEUE(this->threads[i].inbound_frame_queue);
+      
+      pthread_create(&this->threads[i].thread, NULL, &thread_proc, &this->threads[i]);
+    }
 }
 
 static const AVOption options[] = {

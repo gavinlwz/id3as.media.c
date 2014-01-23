@@ -34,7 +34,7 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
   while (1) {
     ret = av_buffersink_get_frame(this->buffersink_ctx, this->output_frame);
 
-    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) 
       break;
     if (ret < 0) {
       ERROR("Error from get_frame");
@@ -55,18 +55,8 @@ static void flush(ID3ASFilterContext *context)
 static void init(ID3ASFilterContext *context, AVDictionary *codec_options) 
 {
   codec_t *this = context->priv_data;
-  int ret;
 
   this->initialised = 0;
-  this->filter_graph = avfilter_graph_alloc();
-  this->output_frame = av_frame_alloc();
-
-  ret = avfilter_graph_create_filter(&this->buffersink_ctx, avfilter_get_by_name("buffersink"), "out", NULL, NULL, this->filter_graph);
-
-  if (ret < 0) {
-    ERROR("Cannot create buffer sink\n");
-    exit(-1);
-  }
 }
 
 static void do_init(codec_t *this, AVFrame *frame, AVRational timebase) 
@@ -76,9 +66,19 @@ static void do_init(codec_t *this, AVFrame *frame, AVRational timebase)
   }
 
   char args[512];
-  int ret;
   AVFilterInOut *outputs = avfilter_inout_alloc();
   AVFilterInOut *inputs  = avfilter_inout_alloc();
+  int ret;
+
+  this->filter_graph = avfilter_graph_alloc();
+  this->output_frame = av_frame_alloc();
+
+  ret = avfilter_graph_create_filter(&this->buffersink_ctx, avfilter_get_by_name("buffersink"), "out", NULL, NULL, this->filter_graph);
+
+  if (ret < 0) {
+    ERROR("Cannot create buffer sink\n");
+    exit(-1);
+  }
 
   snprintf(args, sizeof(args),
 	   "%d:%d:%d:%d:%d:%d:%d",

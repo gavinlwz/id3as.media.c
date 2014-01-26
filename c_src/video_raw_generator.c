@@ -7,13 +7,34 @@ typedef struct _codec_t
   AVFrame *frame;
 
   char *device_name;
+  int device_fd;
   int width;
   int height;
   int interlaced;
   int frame_rate;
   enum PixelFormat pixfmt;
 
+  int data_size;
+  uint8_t *data;
+
 } codec_t;
+
+static int read_exact(int fd, unsigned char *buf, int len)
+{
+  int i, got = 0;
+
+  do {
+    if ((i = read(fd, buf + got, len - got)) <= 0)
+      {
+	return i;
+      }
+
+    got += i;
+
+  } while (got < len);
+
+  return len;
+}
 
 static void process(ID3ASFilterContext *context,
 		    unsigned char *metadata, unsigned int metadata_size, 
@@ -22,9 +43,13 @@ static void process(ID3ASFilterContext *context,
 {
   codec_t *this = context->priv_data;
 
-  avpicture_fill((AVPicture *) this->frame, data, this->pixfmt, this->width, this->height);
+  read_exact(this->device_fd, this->data, this->data_size);
+
+  avpicture_fill((AVPicture *) this->frame, this->data, this->pixfmt, this->width, this->height);
 
   set_frame_metadata(this->frame, metadata);
+
+  TRACE("GOT FRAME!");
 
   send_to_graph(context, this->frame, NINETY_KHZ);
 }
@@ -43,15 +68,20 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
   this->frame->width = this->width;
   this->frame->height = this->height;
   this->frame->interlaced_frame = this->interlaced ? 1 : 0;
+
+  this->data_size = avpicture_fill((AVPicture *) this->frame, NULL, this->pixfmt, this->width, this->height);
+  this->data = malloc(this->data_size);
+
+  this->device_fd = open(this->device_name, O_RDONLY);
 }
 
 static const AVOption options[] = {
   { "device", "The codec for encoding", offsetof(codec_t, device_name), AV_OPT_TYPE_STRING },
   { "width", "the width", offsetof(codec_t, width), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX },
   { "height", "the height", offsetof(codec_t, height), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX },
-  { "interlaced", "is input interlaced format", offsetof(codec_t, interlaced), AV_OPT_TYPE_INT },
-  { "frame_rate", "frame rate", offsetof(codec_t, frame_rate), AV_OPT_TYPE_INT },
-  { "pixel_format", "the pixel format", offsetof(codec_t, pixfmt), AV_OPT_TYPE_INT },
+  { "interlaced", "is input interlaced format", offsetof(codec_t, interlaced), AV_OPT_TYPE_INT, { .i64 = 0}, 0, 1 },
+  { "frame_rate", "frame rate", offsetof(codec_t, frame_rate), AV_OPT_TYPE_INT, { .i64 = 25 }, INT_MIN, INT_MAX },
+  { "pixel_format", "the pixel format", offsetof(codec_t, pixfmt), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX },
   { NULL }
 };
 

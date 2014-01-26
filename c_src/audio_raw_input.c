@@ -53,7 +53,7 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
   this->num_channels = av_get_channel_layout_nb_channels(this->channel_layout);
   this->bytes_per_sample = this->num_channels * av_get_bytes_per_sample(this->sample_format);
 
-  this->frame = avcodec_alloc_frame();
+  this->frame = av_frame_alloc();
   this->frame->format = this->sample_format;
   this->frame->channel_layout = this->channel_layout;
 }

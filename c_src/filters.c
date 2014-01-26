@@ -24,6 +24,7 @@ void id3as_filters_register_all()
   REGISTER_INPUT(encoded_audio);
   REGISTER_INPUT(raw_video);
   REGISTER_INPUT(encoded_video);
+  REGISTER_INPUT(raw_video_generator);
 
   REGISTER_FILTER(resample_audio);
   REGISTER_FILTER(rescale_video);

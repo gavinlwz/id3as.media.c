@@ -84,7 +84,7 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
   this->codec = get_decoder(this->codec_name);
   this->context = allocate_audio_context(this->codec, this->sample_rate, this->channel_layout, this->sample_format, codec_options);
 
-  this->frame = avcodec_alloc_frame();
+  this->frame = av_frame_alloc();
 }
 
 static const AVOption options[] = {

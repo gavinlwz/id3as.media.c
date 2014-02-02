@@ -40,7 +40,6 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
       ERROR("Error from get_frame");
       exit(-1);
     }
-
     send_to_graph(context, this->output_frame, this->output_timebase);
 
     av_frame_unref(this->output_frame);

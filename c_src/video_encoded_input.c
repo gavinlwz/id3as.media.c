@@ -20,7 +20,6 @@ typedef struct _codec_t
 
 static int decode(ID3ASFilterContext *context, AVPacket *pkt) 
 {
-
   codec_t *this = context->priv_data;
   int got_frame = 0;
   int len = avcodec_decode_video2(this->context, this->frame, &got_frame, pkt);
@@ -33,6 +32,8 @@ static int decode(ID3ASFilterContext *context, AVPacket *pkt)
     }
   else if (got_frame)
     {
+      av_frame_make_writable(this->frame);
+
       add_frame_info_to_frame(this->frame_info_queue, this->frame);
 
       this->frame->pts = this->frame->pkt_pts;

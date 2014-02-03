@@ -22,7 +22,7 @@ typedef struct _codec_t
 static int read_exact(int fd, unsigned char *buf, int len)
 {
   int i, got = 0;
-
+  
   do {
     if ((i = read(fd, buf + got, len - got)) <= 0)
       {
@@ -43,6 +43,13 @@ static void process(ID3ASFilterContext *context,
 {
   codec_t *this = context->priv_data;
 
+  this->frame->format = this->pixfmt;
+  this->frame->width = this->width;
+  this->frame->height = this->height;
+  this->frame->interlaced_frame = this->interlaced ? 1 : 0;
+
+  av_frame_get_buffer(this->frame, 32);
+
   read_exact(this->device_fd, this->data, this->data_size);
 
   avpicture_fill((AVPicture *) this->frame, this->data, this->pixfmt, this->width, this->height);
@@ -52,6 +59,8 @@ static void process(ID3ASFilterContext *context,
   set_frame_metadata(this->frame, metadata);
 
   send_to_graph(context, this->frame, NINETY_KHZ);
+ 
+  av_frame_unref(this->frame);
 }
 
 static void flush(ID3ASFilterContext *context) 
@@ -64,14 +73,9 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
   codec_t *this = context->priv_data;
 
   this->frame = av_frame_alloc();
-  this->frame->format = this->pixfmt;
-  this->frame->width = this->width;
-  this->frame->height = this->height;
-  this->frame->interlaced_frame = this->interlaced ? 1 : 0;
-
   this->data_size = avpicture_fill((AVPicture *) this->frame, NULL, this->pixfmt, this->width, this->height);
   this->data = malloc(this->data_size);
-
+  
   this->device_fd = open(this->device_name, O_RDONLY);
 }
 

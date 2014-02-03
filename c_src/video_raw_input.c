@@ -9,6 +9,7 @@ typedef struct _codec_t
   int width;
   int height;
   enum PixelFormat input_pixfmt;
+  int interlaced;
 
 } codec_t;
 
@@ -20,6 +21,8 @@ static void process(ID3ASFilterContext *context,
   codec_t *this = context->priv_data;
 
   avpicture_fill((AVPicture *) this->frame, data, this->input_pixfmt, this->width, this->height);
+
+  this->frame->interlaced_frame = this->interlaced;
 
   set_frame_metadata(this->frame, metadata);
 
@@ -45,6 +48,7 @@ static const AVOption options[] = {
   { "width", "the width", offsetof(codec_t, width), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX },
   { "height", "the height", offsetof(codec_t, height), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX },
   { "pixel_format", "the pixel format", offsetof(codec_t, input_pixfmt), AV_OPT_TYPE_INT },
+  { "interlaced", "interlaced", offsetof(codec_t, interlaced), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX },
   { NULL }
 };
 

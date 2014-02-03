@@ -47,9 +47,9 @@ static void process(ID3ASFilterContext *context,
 
   avpicture_fill((AVPicture *) this->frame, this->data, this->pixfmt, this->width, this->height);
 
-  set_frame_metadata(this->frame, metadata);
+  this->frame->interlaced_frame = this->interlaced;
 
-  TRACE("GOT FRAME!");
+  set_frame_metadata(this->frame, metadata);
 
   send_to_graph(context, this->frame, NINETY_KHZ);
 }

@@ -27,7 +27,8 @@ typedef struct _codec_t
 
 } codec_t;
 
-static void split_fltp(AVFrame *src, AVFrame *left, AVFrame *right);
+static void split_fltp_stereo(AVFrame *src, AVFrame *left, AVFrame *right);
+static void split_fltp_mono(AVFrame *src, AVFrame *left, AVFrame *right);
 
 static void process(ID3ASFilterContext *context, AVFrame *frame)
 {
@@ -70,8 +71,8 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
 {
   codec_t *this = (codec_t *) context->priv_data;
 
-  if (this->channel_layout != AV_CH_LAYOUT_STEREO) {
-    ERRORFMT("Invalid channel layout %d - can only do stereo\n", this->channel_layout);
+  if ((this->channel_layout != AV_CH_LAYOUT_STEREO) && (this->channel_layout != AV_CH_LAYOUT_MONO)) {
+    ERRORFMT("Invalid channel layout %d - can only do mono or stereo\n", this->channel_layout);
     exit(1);
   }
 
@@ -107,7 +108,15 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
   switch (this->sample_format) 
     {
     case AV_SAMPLE_FMT_FLTP:
-      this->convert_fun = split_fltp;
+      switch (this->channel_layout)
+        {
+        case AV_CH_LAYOUT_MONO:
+          this->convert_fun = split_fltp_mono;
+          break;
+        case AV_CH_LAYOUT_STEREO:
+          this->convert_fun = split_fltp_stereo;
+          break;
+        }
       break;
 
     default:
@@ -117,7 +126,26 @@ static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
     }
 }
 
-static void split_fltp(AVFrame *src, AVFrame *left, AVFrame *right) {
+static void split_fltp_mono(AVFrame *src, AVFrame *left, AVFrame *right) {
+
+  left->data[0] = src->data[0];
+  left->linesize[0] = src->linesize[0];
+  left->nb_samples = src->nb_samples;
+  left->sample_rate = src->sample_rate;
+  left->pts = src->pts;
+  left->pkt_pts = src->pkt_pts;
+  left->pkt_dts = src->pkt_dts;
+
+  right->data[0] = src->data[0];
+  right->linesize[0] = src->linesize[0];
+  right->nb_samples = src->nb_samples;
+  right->sample_rate = src->sample_rate;
+  right->pts = src->pts;
+  right->pkt_pts = src->pkt_pts;
+  right->pkt_dts = src->pkt_dts;
+}
+
+static void split_fltp_stereo(AVFrame *src, AVFrame *left, AVFrame *right) {
 
   left->data[0] = src->data[0];
   left->linesize[0] = src->linesize[0];

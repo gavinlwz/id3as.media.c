@@ -35,7 +35,7 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
   int nblack = 0;
   int is_black;
 
-  for (i = 0; i < frame->height; i++) 
+  for (i = 0; i < frame->height; i++)
     {
       for (j = 0; j < frame->width; j++)
 	{
@@ -48,18 +48,18 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
 
   is_black = pblack >= this->percentage_below_threshold;
 
-  if (is_black) 
+  if (is_black)
     {
       this->black_frame_counter++;
 
-      if (this->black_frame_counter > this->black_frame_count_threshold) 
+      if (this->black_frame_counter > this->black_frame_count_threshold)
 	{
 	  this->black_frame_counter = 0;
 	  this->non_black_frame_counter = 0;
 	  this->black = 1;
 	}
     }
-  else 
+  else
     {
       this->non_black_frame_counter++;
 
@@ -78,23 +78,23 @@ static void process(ID3ASFilterContext *context, AVFrame *frame, AVRational time
   send_to_graph(context, frame, timebase);
 }
 
-static void flush(ID3ASFilterContext *context) 
+static void flush(ID3ASFilterContext *context)
 {
   flush_graph(context);
 }
 
-static void do_init(codec_t *this, AVFrame *frame) 
+static void do_init(codec_t *this, AVFrame *frame)
 {
-  if (!this->initialised) 
+  if (!this->initialised)
     {
-      this->black_frame_count_threshold = (this->black_duration * this->frame_rate.den) / this->frame_rate.num;
-      this->non_black_frame_count_threshold = (this->non_black_duration * this->frame_rate.den) / this->frame_rate.num;
+      this->black_frame_count_threshold = (this->black_duration * this->frame_rate.num) / this->frame_rate.den;
+      this->non_black_frame_count_threshold = (this->non_black_duration * this->frame_rate.num) / this->frame_rate.den;
 
       this->initialised = 1;
     }
 }
 
-static void init(ID3ASFilterContext *context, AVDictionary *codec_options) 
+static void init(ID3ASFilterContext *context, AVDictionary *codec_options)
 {
   codec_t *this = context->priv_data;
 

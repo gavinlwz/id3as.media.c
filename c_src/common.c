@@ -5,8 +5,8 @@
 #include <libavutil/mem.h>
 
 #include "id3as_libav.h"
-#include "i_port.h" 
-#include "i_utils.h" 
+#include "i_port.h"
+#include "i_utils.h"
 
 typedef struct _metadata_t {
 
@@ -19,9 +19,9 @@ typedef struct _metadata_t {
   int64_t pts;
   int64_t dts;
   int duration;
-  
+
   const char *codec_name;
-  
+
   int sample_rate;
   char *sample_format_name;
   char *channel_layout_name;
@@ -55,12 +55,12 @@ static void encode_timestamp(char *output_buffer, int *i, int64_t timestamp);
 
 static i_mutex_t mutex = INITIALISE_STATIC_MUTEX();
 
-void lock_output() 
+void lock_output()
 {
   i_mutex_lock(&mutex);
 }
 
-void unlock_output() 
+void unlock_output()
 {
   i_mutex_unlock(&mutex);
 }
@@ -109,7 +109,7 @@ AVCodec *get_decoder(char *codec_name)
   return codec;
 }
 
-static char *get_sample_format_name(int sample_format) 
+static char *get_sample_format_name(int sample_format)
 {
   if (sample_format == AV_SAMPLE_FMT_U8)
     {
@@ -149,7 +149,7 @@ static char *get_channel_layout_name(int channel_layout)
   }
 }
 
-static char * get_pixel_format_name(enum PixelFormat pixel_format) 
+static char * get_pixel_format_name(enum PixelFormat pixel_format)
 {
   if (pixel_format == PIX_FMT_YUV420P)
     {
@@ -159,7 +159,7 @@ static char * get_pixel_format_name(enum PixelFormat pixel_format)
     {
       return "bgr24";
     }
-  else if (pixel_format == AV_PIX_FMT_YUVJ420P) 
+  else if (pixel_format == AV_PIX_FMT_YUVJ420P)
     {
       return "yuvj420p";
     }
@@ -168,7 +168,7 @@ static char * get_pixel_format_name(enum PixelFormat pixel_format)
   exit(1);
 }
 
-AVCodecContext *allocate_audio_context(AVCodec *codec, int sample_rate, int channel_layout, enum AVSampleFormat sample_format, AVDictionary *codec_options) 
+AVCodecContext *allocate_audio_context(AVCodec *codec, int sample_rate, int channel_layout, enum AVSampleFormat sample_format, AVDictionary *codec_options)
 {
   AVCodecContext *c = avcodec_alloc_context3(codec);
 
@@ -178,7 +178,7 @@ AVCodecContext *allocate_audio_context(AVCodec *codec, int sample_rate, int chan
   c->channels = av_get_channel_layout_nb_channels(channel_layout);
   c->refcounted_frames = 1;
 
-  int rc = avcodec_open2(c, codec, &codec_options); 
+  int rc = avcodec_open2(c, codec, &codec_options);
   if (rc < 0) {
     ERRORFMT("could not open codec %s - rc = %d", codec->name, rc);
     exit(1);
@@ -189,7 +189,7 @@ AVCodecContext *allocate_audio_context(AVCodec *codec, int sample_rate, int chan
       TRACE("Unused options:");
 
       AVDictionaryEntry *t = NULL;
-      while ((t = av_dict_get(codec_options, "", t, AV_DICT_IGNORE_SUFFIX))) 
+      while ((t = av_dict_get(codec_options, "", t, AV_DICT_IGNORE_SUFFIX)))
 	{
 	  TRACEFMT("Unused key: %s\n", t->key);
 	}
@@ -199,7 +199,7 @@ AVCodecContext *allocate_audio_context(AVCodec *codec, int sample_rate, int chan
   return c;
 }
 
-AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, enum PixelFormat pixfmt, uint8_t *extradata, int extradata_size, AVDictionary *codec_options) 
+AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, enum PixelFormat pixfmt, uint8_t *extradata, int extradata_size, AVDictionary *codec_options)
 {
   AVCodecContext *c = avcodec_alloc_context3(codec);
 
@@ -243,7 +243,7 @@ AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, en
       TRACE("Unused options:");
 
       AVDictionaryEntry *t = NULL;
-      while ((t = av_dict_get(codec_options, "", t, AV_DICT_IGNORE_SUFFIX))) 
+      while ((t = av_dict_get(codec_options, "", t, AV_DICT_IGNORE_SUFFIX)))
 	{
 	  TRACEFMT("Unused key: %s\n", t->key);
 	}
@@ -253,7 +253,7 @@ AVCodecContext *allocate_video_context(AVCodec *codec, int width, int height, en
   return c;
 }
 
-void set_packet_metadata(AVPacket *pkt, unsigned char *metadata) 
+void set_packet_metadata(AVPacket *pkt, unsigned char *metadata)
 {
   char *buf = (char *) metadata;
   int index = 0;
@@ -267,7 +267,7 @@ void set_packet_metadata(AVPacket *pkt, unsigned char *metadata)
   I_DECODE_LONGLONG(buf, &index, (long long *) &pkt->dts);
 }
 
-void set_frame_metadata(AVFrame *frame, unsigned char *metadata) 
+void set_frame_metadata(AVFrame *frame, unsigned char *metadata)
 {
   char *buf = (char *) metadata;
   int index = 0;
@@ -280,7 +280,7 @@ void set_frame_metadata(AVFrame *frame, unsigned char *metadata)
   I_DECODE_LONGLONG(buf, &index, (long long *) &frame->pts);
 }
 
-static int encode_done(char *type, char *output_buffer) 
+static int encode_done(char *type, char *output_buffer)
 {
   int i = 0;
 
@@ -330,13 +330,13 @@ void write_output_from_frame(char *pin_name, int stream_id, AVFrame *frame)
     metadata.profile = -1;
     metadata.level = -1;
     break;
-    
+
   case AVMEDIA_TYPE_AUDIO:
     metadata.sample_rate = frame->sample_rate;
     metadata.sample_format_name = get_sample_format_name(frame->format);
     metadata.channel_layout_name = get_channel_layout_name(frame->channel_layout);
     break;
-    
+
   default:
     ERRORFMT("Unsupported media type %d\n", metadata.type);
     exit(-1);
@@ -379,7 +379,7 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
     }
     metadata.pixel_aspect_ratio = codec_context->sample_aspect_ratio;
     break;
-    
+
   case AVMEDIA_TYPE_AUDIO:
     metadata.sample_rate = codec_context->sample_rate;
     metadata.sample_format_name = get_sample_format_name(codec_context->sample_fmt);
@@ -387,7 +387,7 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
     metadata.profile = codec_context->profile;
     metadata.level = codec_context->level;
     break;
-    
+
   default:
     ERRORFMT("Unsupported codec type %d\n", codec_context->codec_type);
     exit(-1);
@@ -398,7 +398,7 @@ void write_output_from_packet(char *pin_name, int stream_id, AVCodecContext *cod
   i_mutex_unlock(&mutex);
 }
 
-static void write_data(char *data, int size) 
+static void write_data(char *data, int size)
 {
   // TODO - check memory leak in port.c:read_port
   write_buffer_to_port(PACKET_SIZE, (unsigned char *)data, size);
@@ -419,11 +419,11 @@ static void write_frame(metadata_t *metadata, char *frame_info, int frame_info_s
 }
 
 static int encode_frame(char *output_buffer, metadata_t *metadata, char *frame_info, int frame_info_size, char *data, int data_size)
-{ 
+{
   int i = 0;
 
   ei_encode_version(output_buffer, &i);
-  
+
   ei_encode_tuple_header(output_buffer, &i, 3);
   ei_encode_atom(output_buffer, &i, "output_frame");
   ei_encode_atom(output_buffer, &i, metadata->pin_name);
@@ -485,12 +485,12 @@ static void encode_video_header(char *output_buffer, int *i, metadata_t *metadat
   ei_encode_long(output_buffer, i, metadata->pixel_aspect_ratio.den);
   ei_encode_atom(output_buffer, i, "undefined"); // display_aspect_ratio
   ei_encode_tuple_header(output_buffer, i, 2); // frame_rate
-  ei_encode_long(output_buffer, i, metadata->time_base.num);
   ei_encode_long(output_buffer, i, metadata->time_base.den);
+  ei_encode_long(output_buffer, i, metadata->time_base.num);
   ei_encode_binary(output_buffer, i, metadata->extradata, metadata->extradata_size); // extradata
 }
 
-static void encode_timestamp(char *output_buffer, int *i, int64_t timestamp) 
+static void encode_timestamp(char *output_buffer, int *i, int64_t timestamp)
 {
   ei_encode_long(output_buffer, i, timestamp);
 }

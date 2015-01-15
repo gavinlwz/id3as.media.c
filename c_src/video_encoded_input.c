@@ -16,15 +16,20 @@ typedef struct _codec_t
 
   char *extradata;
 
+  int64_t max_decoded_pts;
+
 } codec_t;
+
+
 
 static int decode(ID3ASFilterContext *context, AVPacket *pkt) 
 {
 
   codec_t *this = context->priv_data;
   int got_frame = 0;
+
   int len = avcodec_decode_video2(this->context, this->frame, &got_frame, pkt);
-  
+
   if (len < 0)
     {
       TRACEFMT("avcodec_decode_video2 failed with %d", len);
@@ -33,15 +38,29 @@ static int decode(ID3ASFilterContext *context, AVPacket *pkt)
     }
   else if (got_frame)
     {
-      add_frame_info_to_frame(this->frame_info_queue, this->frame);
+      if (this->frame->pkt_pts <= this->max_decoded_pts)
+	{
+	  TRACEFMT("dropping raw packet with non-monotonic PTS %ld %ld", this->frame->pkt_pts, this->max_decoded_pts);
+	}
+      else
+	{
+	  this->max_decoded_pts = this->frame->pkt_pts;
 
-      this->frame->pts = this->frame->pkt_pts;
-
-      send_to_graph(context, this->frame, NINETY_KHZ);
+	  add_frame_info_to_frame(this->frame_info_queue, this->frame);
       
+	  this->frame->pts = this->frame->pkt_pts;
+
+	  send_to_graph(context, this->frame, NINETY_KHZ);
+      
+	}
       av_frame_unref(this->frame);
     }
 
+  if (len != pkt->size) 
+    {
+      TRACEFMT("Length mismatch %d %d %d\r\n", got_frame, len, pkt->size);
+    }
+  
   return got_frame;
 }
 
@@ -54,6 +73,9 @@ static void process(ID3ASFilterContext *context,
   AVPacket pkt;
 
   av_init_packet(&pkt);
+  // pkt.data = malloc(data_size + FF_INPUT_BUFFER_PADDING_SIZE);
+  // memset(pkt.data + data_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+  // memcpy(pkt.data, data, data_size);
   pkt.data = data;
   pkt.size = data_size;
 
@@ -62,6 +84,8 @@ static void process(ID3ASFilterContext *context,
   queue_frame_info(this->frame_info_queue, frame_info, frame_info_size, pkt.pts);
 
   decode(context, &pkt);
+
+  // free(pkt.data);
 }
 
 static void flush(ID3ASFilterContext *context) 
